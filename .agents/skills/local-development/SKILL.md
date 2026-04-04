@@ -13,6 +13,7 @@ argument-hint: "Optional: specify development environment or platform to focus s
 - Creating smooth onboarding experience for new developers
 - Implementing hot reloading and live development features
 - Establishing debugging and development tooling standards
+- Managing commit strategies and knowledge capture workflows
 
 ## Development Experience Checklist
 
@@ -36,7 +37,27 @@ argument-hint: "Optional: specify development environment or platform to focus s
 - [ ] Troubleshooting guide for common issues
 - [ ] Video walkthrough or setup documentation
 
-### Development Workflow
+### Development Workflow & Knowledge Management
+
+**Commit Strategy for Major Features**
+
+- [ ] Commit after each successful major feature implementation
+- [ ] Create comprehensive commit messages documenting:
+  - What was implemented (features, technical decisions)
+  - Key architectural choices made
+  - Integration points and dependencies
+  - Next steps or remaining work
+- [ ] Group related changes into logical commits
+- [ ] Use conventional commit format (feat:, fix:, docs:, etc.)
+
+**Knowledge Capture as Skills**
+
+- [ ] Document reusable patterns as .agents/skills/ files  
+- [ ] Create skills for domain-specific implementations (maps, auth, etc.)
+- [ ] Include implementation checklists and troubleshooting guides
+- [ ] Use proper YAML frontmatter with applyTo patterns
+- [ ] Store session notes in /memories/session/ for context
+- [ ] Update skills based on lessons learned during development
 
 **Hot Reloading & Live Updates**
 
@@ -86,6 +107,76 @@ argument-hint: "Optional: specify development environment or platform to focus s
 - [ ] Dependency health checks included
 
 ## Development Setup Examples
+
+### Commit Strategy Example
+```bash
+# After implementing major feature
+git add .
+git commit -m "feat: implement interactive map view with Leaflet integration
+
+- Add interactive Leaflet map with OpenStreetMap tiles  
+- Implement cafe markers with detailed popups
+- Add click-to-add-cafe functionality with modal dialog
+- Include map controls for filtering (favorites, clustering, density)
+- Support full cafe creation with name, address, website, phone, notes
+- Integrate with AppContext for state management
+- Add proper TypeScript types and error handling
+- Include responsive design and accessibility features
+
+Features:
+- Interactive map navigation and zoom
+- Cafe markers showing visit count, ratings, last visit
+- Click anywhere on map to add new cafe
+- Filter controls for favorites and visualization options  
+- Detailed cafe creation form with validation
+- Real-time updates via React state management"
+```
+
+### Knowledge Capture Workflow
+```bash
+# 1. Create session notes during development
+/memories/session/feature-implementation-notes.md
+
+# 2. Create reusable skill after successful implementation
+.agents/skills/domain-specific-skill/SKILL.md
+
+# 3. Include proper YAML frontmatter
+---
+name: domain-skill
+description: Brief description for when to use this skill
+applyTo:
+  - "**/*[Tt]arget*"
+  - "**/*[Pp]attern*"
+tags:
+  - relevant
+  - tags
+---
+
+# 4. Document implementation patterns, checklists, troubleshooting
+```
+
+### Session Memory Structure
+```markdown
+# Feature Implementation Session
+
+## Successfully Implemented
+- List of completed features and functionality
+- Technical decisions made during implementation
+
+## Key Technical Decisions  
+- Architectural choices and rationale
+- Library selections and integration approaches
+- Performance and scalability considerations
+
+## Commit Information
+- Commit hash and comprehensive message
+- Files changed and scope of implementation
+
+## Next Steps
+- Remaining work or planned improvements
+- Testing and validation needs
+- Integration with other system components
+```
 
 ### Package.json Development Scripts
 
