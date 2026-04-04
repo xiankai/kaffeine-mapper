@@ -41,7 +41,7 @@ interface CafeMarkerProps {
 
 function CafeMarker({ cafe, onClick }: CafeMarkerProps) {
   const navigate = useNavigate();
-  
+
   const handleClick = () => {
     onClick(cafe);
   };
@@ -74,7 +74,7 @@ function CafeMarker({ cafe, onClick }: CafeMarkerProps) {
               <div>🕒 Last: {new Date(cafe.lastVisited).toLocaleDateString()}</div>
             )}
           </div>
-          <button 
+          <button
             onClick={handleViewDetails}
             style={{
               marginTop: '0.5rem',
@@ -114,25 +114,25 @@ export default function MapView() {
     setMapSettings({ [setting]: value });
   };
 
-  const filteredCafes = cafes.filter(cafe => 
+  const filteredCafes = cafes.filter(cafe =>
     !mapSettings.showFavoritesOnly || cafe.isFavorite
   );
 
   return (
-    <div style={{ 
-      height: 'calc(100vh - 80px)', 
-      display: 'flex', 
+    <div style={{
+      height: 'calc(100vh - 80px)',
+      display: 'flex',
       flexDirection: 'column',
       padding: '1rem'
     }}>
       <div style={{ marginBottom: '1rem' }}>
         <h2 style={{ margin: '0 0 0.5rem 0' }}>🗺️ Map View</h2>
-        
-        <div style={{ 
-          display: 'flex', 
-          gap: '1rem', 
-          flexWrap: 'wrap', 
-          alignItems: 'center' 
+
+        <div style={{
+          display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          alignItems: 'center'
         }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
@@ -142,7 +142,7 @@ export default function MapView() {
             />
             ⭐ Favorites only
           </label>
-          
+
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
               type="checkbox"
@@ -151,7 +151,7 @@ export default function MapView() {
             />
             📍 Cluster markers
           </label>
-          
+
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input
               type="checkbox"
@@ -160,7 +160,7 @@ export default function MapView() {
             />
             🔥 Visit density
           </label>
-          
+
           <div style={{ marginLeft: 'auto', fontSize: '0.9rem', color: '#666' }}>
             Showing {filteredCafes.length} of {cafes.length} cafes • Click map to add cafe
           </div>
@@ -180,9 +180,9 @@ export default function MapView() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
+
           <MapEventHandler onMapClick={handleMapClick} />
-          
+
           {filteredCafes.map(cafe => (
             <CafeMarker
               key={cafe.id}
@@ -269,7 +269,7 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
         <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#666' }}>
           📍 {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
         </p>
-        
+
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
@@ -290,7 +290,7 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
               autoFocus
             />
           </div>
-          
+
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
               Address
@@ -308,7 +308,7 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
               }}
             />
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
@@ -327,7 +327,7 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
                 }}
               />
             </div>
-            
+
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
                 Phone
@@ -346,7 +346,7 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
               />
             </div>
           </div>
-          
+
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
               Notes
@@ -365,7 +365,7 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
               }}
             />
           </div>
-          
+
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
             <button
               type="button"

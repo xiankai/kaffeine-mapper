@@ -52,7 +52,7 @@ argument-hint: "Optional: specify development environment or platform to focus s
 
 **Knowledge Capture as Skills**
 
-- [ ] Document reusable patterns as .agents/skills/ files  
+- [ ] Document reusable patterns as .agents/skills/ files
 - [ ] Create skills for domain-specific implementations (maps, auth, etc.)
 - [ ] Include implementation checklists and troubleshooting guides
 - [ ] Use proper YAML frontmatter with applyTo patterns
@@ -114,7 +114,7 @@ argument-hint: "Optional: specify development environment or platform to focus s
 git add .
 git commit -m "feat: implement interactive map view with Leaflet integration
 
-- Add interactive Leaflet map with OpenStreetMap tiles  
+- Add interactive Leaflet map with OpenStreetMap tiles
 - Implement cafe markers with detailed popups
 - Add click-to-add-cafe functionality with modal dialog
 - Include map controls for filtering (favorites, clustering, density)
@@ -127,7 +127,7 @@ Features:
 - Interactive map navigation and zoom
 - Cafe markers showing visit count, ratings, last visit
 - Click anywhere on map to add new cafe
-- Filter controls for favorites and visualization options  
+- Filter controls for favorites and visualization options
 - Detailed cafe creation form with validation
 - Real-time updates via React state management"
 ```
@@ -163,7 +163,7 @@ tags:
 - List of completed features and functionality
 - Technical decisions made during implementation
 
-## Key Technical Decisions  
+## Key Technical Decisions
 - Architectural choices and rationale
 - Library selections and integration approaches
 - Performance and scalability considerations

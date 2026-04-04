@@ -54,7 +54,7 @@ export default function ImportView() {
   const isLikelyCafe = (visit: TimelineVisit): boolean => {
     const duration = calculateVisitDuration(visit.startTime, visit.endTime);
     const semanticType = visit.visit.topCandidate.semanticType;
-    
+
     // Filter criteria for potential cafes:
     // - UNKNOWN semantic type (most cafes would be this)
     // - Duration between 15 minutes and 4 hours (typical cafe visits)
@@ -70,7 +70,7 @@ export default function ImportView() {
   const createCafeFromVisit = (visit: TimelineVisit, visitCount: number = 1): Omit<CafeLocation, 'id' | 'createdAt' | 'updatedAt' | 'totalVisits'> => {
     const coords = parseCoordinates(visit.visit.topCandidate.placeLocation.latLng);
     const duration = calculateVisitDuration(visit.startTime, visit.endTime);
-    
+
     return {
       name: visit.visit.topCandidate.name || `Location ${visit.visit.topCandidate.placeId.slice(-8)}`,
       address: `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`,
@@ -117,14 +117,14 @@ export default function ImportView() {
       dispatch({ type: 'ADD_IMPORT_SESSION', session });
 
       // Filter for potential cafe visits
-      const visits = data.semanticSegments.filter(segment => 
+      const visits = data.semanticSegments.filter(segment =>
         segment.visit && isLikelyCafe(segment)
       );
 
-      setProcessingStats({ 
-        total: visits.length, 
-        processed: 0, 
-        created: 0 
+      setProcessingStats({
+        total: visits.length,
+        processed: 0,
+        created: 0
       });
 
       // Group visits by placeId to handle multiple visits to same location
@@ -145,13 +145,13 @@ export default function ImportView() {
         // Use the first visit to create the cafe, then add other visits
         const firstVisit = locationVisits[0];
         const cafe = createCafeFromVisit(firstVisit, locationVisits.length);
-        
+
         // Add additional visits to the cafe
         if (locationVisits.length > 1) {
           for (let i = 1; i < locationVisits.length; i++) {
             const additionalVisit = locationVisits[i];
             const duration = calculateVisitDuration(additionalVisit.startTime, additionalVisit.endTime);
-            
+
             cafe.visits.push({
               id: `visit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               visitedAt: additionalVisit.startTime,
@@ -192,7 +192,7 @@ export default function ImportView() {
     } catch (error) {
       console.error('Error processing timeline file:', error);
       alert(`Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      
+
       // Update session with error
       const errorSession: ImportSession = {
         id: `import_${Date.now()}`,
@@ -251,13 +251,13 @@ export default function ImportView() {
 
       <div style={{ marginBottom: '2rem' }}>
         <p style={{ color: '#666', lineHeight: 1.6, marginBottom: '1rem' }}>
-          Import your cafe visits from Google Timeline data. The import will automatically detect 
+          Import your cafe visits from Google Timeline data. The import will automatically detect
           potential cafe visits based on duration and location patterns.
         </p>
-        
-        <div style={{ 
-          background: '#f8f9fa', 
-          padding: '1rem', 
+
+        <div style={{
+          background: '#f8f9fa',
+          padding: '1rem',
           borderRadius: '8px',
           marginBottom: '1rem'
         }}>
@@ -265,7 +265,7 @@ export default function ImportView() {
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
             <li>Visit duration: 15 minutes to 4 hours</li>
             <li>Location type: Unknown (non-home/work places)</li>
-            <li>High location confidence (>30%)</li>
+            <li>High location confidence (&gt;30%)</li>
           </ul>
         </div>
 
@@ -299,9 +299,9 @@ export default function ImportView() {
           <div>
             ☕ Created: {processingStats.created} cafes
           </div>
-          <div style={{ 
-            background: '#fff', 
-            height: '8px', 
+          <div style={{
+            background: '#fff',
+            height: '8px',
             borderRadius: '4px',
             marginTop: '0.5rem',
             overflow: 'hidden'
@@ -334,9 +334,9 @@ export default function ImportView() {
         onClick={() => fileInputRef.current?.click()}
       >
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-          {isProcessing ? '⏳' : '📁'}  
+          {isProcessing ? '⏳' : '📁'}
         </div>
-        
+
         {isProcessing ? (
           <div>
             <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>
@@ -356,7 +356,7 @@ export default function ImportView() {
             </p>
           </div>
         )}
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -488,7 +488,7 @@ function ImportSessionCard({ session }: ImportSessionCardProps) {
           <span>{getStatusIcon(session.status)}</span>
           <strong>{session.filename}</strong>
         </div>
-        <div style={{ 
+        <div style={{
           color: getStatusColor(session.status),
           fontWeight: 'bold',
           fontSize: '0.9rem'
@@ -496,7 +496,7 @@ function ImportSessionCard({ session }: ImportSessionCardProps) {
           {session.status.toUpperCase()}
         </div>
       </div>
-      
+
       <div style={{ fontSize: '0.9rem', color: '#666' }}>
         <div>📅 Imported: {new Date(session.importedAt).toLocaleString()}</div>
         <div>📊 Processed: {session.processedLocations} / {session.totalLocations} locations</div>
