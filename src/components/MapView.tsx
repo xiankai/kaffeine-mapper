@@ -226,8 +226,8 @@ export default function MapView() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <MapEventHandler 
-            onMapClick={handleMapClick} 
+          <MapEventHandler
+            onMapClick={handleMapClick}
             onViewChange={handleViewChange}
           />
 
