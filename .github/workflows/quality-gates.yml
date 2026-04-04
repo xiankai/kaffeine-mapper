@@ -1,0 +1,239 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  # Hook 1: Unit Testing Coverage Gate
+  coverage-gate:
+    name: Coverage Gate (≥95%)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Coverage threshold check
+        run: |
+          npx jest --coverage --coverageThreshold='{"global":{"lines":95,"branches":90,"functions":100,"statements":95}}'
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+
+      - name: Coverage comment
+        if: github.event_name == 'pull_request'
+        uses: 5monkeys/cobertura-action@master
+        with:
+          path: coverage/cobertura-coverage.xml
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          minimum_coverage: 95
+
+  # Hook 2: Frontend Performance Gate
+  performance-gate:
+    name: Performance Gate (LCP<2.5s, CLS<0.1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Lighthouse CI performance audit
+        run: |
+          npm install -g @lhci/cli@0.12.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Bundle size check
+        run: |
+          npm run analyze:bundle
+          node scripts/check-bundle-size.js
+
+  # Hook 3: Accessibility compliance
+  accessibility-gate:
+    name: A11y Gate (WCAG AA, Lighthouse ≥90)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: axe-core accessibility testing
+        run: |
+          npm install -g @axe-core/cli
+          axe http://localhost:3000 --exit
+
+      - name: Pa11y accessibility testing
+        run: |
+          npm install -g pa11y
+          pa11y http://localhost:3000 --standard WCAG2AA --threshold 0
+
+      - name: Lighthouse accessibility audit
+        run: |
+          npx lighthouse http://localhost:3000 \
+            --only-categories=accessibility \
+            --chrome-flags="--headless" \
+            --output=json \
+            --output-path=./lighthouse-a11y.json
+          node scripts/check-a11y-score.js
+
+  # Hook 4: Code Quality Gate
+  code-quality-gate:
+    name: Code Quality Gate (ESLint, TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint check
+        run: npm run lint:check
+
+      - name: TypeScript type check
+        run: npm run type-check
+
+      - name: Import organization check
+        run: npm run imports:check
+
+      - name: Code complexity analysis
+        run: |
+          npx eslint src/ --ext .ts,.tsx,.js,.jsx \
+            --rule 'complexity: [error, 10]' \
+            --rule 'max-depth: [error, 4]' \
+            --rule 'max-lines-per-function: [error, 50]'
+
+  # Hook 5: Security Gate
+  security-gate:
+    name: Security Gate (Vulnerability Scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit
+        run: npm audit --audit-level high
+
+      - name: Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --fail-on=all
+
+      - name: CodeQL security analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: javascript
+
+      - name: Semgrep security scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+
+  # Hook 6: License Compliance Gate
+  license-gate:
+    name: License Compliance Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: License compatibility check
+        run: |
+          npm install -g license-checker
+          license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense' --excludePrivatePackages
+
+      - name: FOSSA license scan
+        uses: fossas/fossa-action@main
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+
+      - name: License file validation
+        run: |
+          if [ ! -f "LICENSE" ]; then
+            echo "❌ LICENSE file missing"
+            exit 1
+          fi
+          echo "✅ LICENSE file present"
+
+      - name: Generate license report
+        run: |
+          npx license-report --output=html --only=prod > license-report.html
+          npx license-report --output=json --only=prod > license-report.json
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: license-report.*

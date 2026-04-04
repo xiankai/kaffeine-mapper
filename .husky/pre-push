@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-push Quality Gates - Full validation before push
+echo "🚀 Running pre-push quality gates..."
+
+# 1. Full test suite with coverage
+echo "\n🧪 Running full test suite..."
+npm run test:coverage
+
+# 2. Performance check (if built)
+if [ -d "dist" ]; then
+  echo "\n⚡ Checking bundle size..."
+  npm run analyze:bundle
+fi
+
+# 3. Security audit
+echo "\n🔒 Security audit..."
+npm run security:audit
+
+# 4. License compliance
+echo "\n📄 License compliance check..."
+npm run license:check
+
+echo "\n✅ All pre-push gates passed! Ready to push."

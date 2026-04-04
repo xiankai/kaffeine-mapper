@@ -1,0 +1,74 @@
+{
+  "compilerOptions": {
+    // STRICT TYPE CHECKING - Enforced by CI
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Additional strict checks
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitThis": true,
+
+    // Module resolution
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+
+    // Bundler compatibility
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "noEmit": true,
+
+    // Path mapping
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@services/*": ["./src/services/*"],
+      "@types/*": ["./src/types/*"]
+    },
+
+    // React JSX
+    "jsx": "react-jsx",
+
+    // Development experience
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Quality settings
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+
+  "include": ["src/**/*", "src/**/*.tsx", "src/**/*.ts"],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ],
+
+  // Strict project references
+  "references": []
+}
