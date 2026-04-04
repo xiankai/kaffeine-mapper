@@ -6,29 +6,65 @@ import { useApp } from '../context/AppContext';
 import { CafeLocation, Coordinates } from '../types';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default markers in React-Leaflet
-const DefaultIcon = L.icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+// Fix for default markers in React-Leaflet with fallback to simple circle marker
+const createMarkerIcon = () => {
+  try {
+    // Try CDN first
+    return L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  } catch (error) {
+    // Fallback to circle marker if CDN fails
+    console.warn('Failed to load marker icon, using fallback');
+    return L.divIcon({
+      className: 'custom-div-icon',
+      html: '<div style="background-color: #3388ff; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+  }
+};
 
+const DefaultIcon = createMarkerIcon();
 L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapEventHandlerProps {
   onMapClick: (coordinates: Coordinates) => void;
+  onViewChange?: (center: Coordinates, zoom: number) => void;
 }
 
-function MapEventHandler({ onMapClick }: MapEventHandlerProps) {
-  useMapEvents({
+function MapEventHandler({ onMapClick, onViewChange }: MapEventHandlerProps) {
+  const map = useMapEvents({
     click: (e) => {
       onMapClick({
         latitude: e.latlng.lat,
         longitude: e.latlng.lng,
       });
+    },
+    moveend: () => {
+      if (onViewChange) {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        onViewChange(
+          { latitude: center.lat, longitude: center.lng },
+          zoom
+        );
+      }
+    },
+    zoomend: () => {
+      if (onViewChange) {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        onViewChange(
+          { latitude: center.lat, longitude: center.lng },
+          zoom
+        );
+      }
     },
   });
   return null;
@@ -114,6 +150,10 @@ export default function MapView() {
     setMapSettings({ [setting]: value });
   };
 
+  const handleViewChange = useCallback((center: Coordinates, zoom: number) => {
+    setMapSettings({ center, zoom });
+  }, [setMapSettings]);
+
   const filteredCafes = cafes.filter(cafe =>
     !mapSettings.showFavoritesOnly || cafe.isFavorite
   );
@@ -163,6 +203,11 @@ export default function MapView() {
 
           <div style={{ marginLeft: 'auto', fontSize: '0.9rem', color: '#666' }}>
             Showing {filteredCafes.length} of {cafes.length} cafes • Click map to add cafe
+            {cafes.length === 0 && (
+              <span style={{ color: '#f57c00', marginLeft: '0.5rem' }}>
+                No cafes yet - try importing data or adding manually
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -181,15 +226,21 @@ export default function MapView() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <MapEventHandler onMapClick={handleMapClick} />
+          <MapEventHandler 
+            onMapClick={handleMapClick} 
+            onViewChange={handleViewChange}
+          />
 
-          {filteredCafes.map(cafe => (
-            <CafeMarker
-              key={cafe.id}
-              cafe={cafe}
-              onClick={handleCafeClick}
-            />
-          ))}
+          {filteredCafes.map((cafe, index) => {
+            console.log(`Rendering marker ${index + 1}/${filteredCafes.length}:`, cafe.name, cafe.coordinates);
+            return (
+              <CafeMarker
+                key={`cafe-${cafe.id}`}
+                cafe={cafe}
+                onClick={handleCafeClick}
+              />
+            );
+          })}
         </MapContainer>
       </div>
 

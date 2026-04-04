@@ -108,10 +108,10 @@ const renderImportView = () => {
 const createMockFile = (content: any, filename = 'timeline.json') => {
   const jsonContent = JSON.stringify(content);
   const file = new File([jsonContent], filename, { type: 'application/json' });
-  
+
   // Mock the text() method
   (file as any).text = jest.fn().mockResolvedValue(jsonContent);
-  
+
   return file;
 };
 
@@ -123,7 +123,7 @@ describe('ImportView Integration Tests', () => {
 
   it('renders import interface correctly', () => {
     renderImportView();
-    
+
     expect(screen.getByText('📥 Import Google Timeline Data')).toBeInTheDocument();
     expect(screen.getByText('Drag and drop your Google Timeline JSON file')).toBeInTheDocument();
     expect(screen.getByText('Load Sample Data')).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe('ImportView Integration Tests', () => {
   it('handles file selection and processing', async () => {
     // const user = userEvent.setup();
     renderImportView();
-    
+
     const mockFile = createMockFile(mockTimelineData, 'test-timeline.json');
     // Simple test without user-event for now
     expect(screen.getByText('📥 Import Google Timeline Data')).toBeInTheDocument();
@@ -141,10 +141,10 @@ describe('ImportView Integration Tests', () => {
   it('loads sample data when button is clicked', async () => {
     // const user = userEvent.setup();
     renderImportView();
-    
+
     const loadSampleButton = screen.getByText('Load Sample Data');
     fireEvent.click(loadSampleButton);
-    
+
     // Should show success alert (mocked)
     expect(window.alert).toHaveBeenCalledWith('Added 3 sample cafes!');
   });
@@ -152,7 +152,7 @@ describe('ImportView Integration Tests', () => {
   it('shows error for invalid JSON file', async () => {
     // const user = userEvent.setup();
     renderImportView();
-    
+
     // Simple test for now
     expect(screen.getByText('Drag and drop your Google Timeline JSON file')).toBeInTheDocument();
   });
@@ -160,21 +160,21 @@ describe('ImportView Integration Tests', () => {
   it('filters visits correctly during processing', async () => {
     // const user = userEvent.setup();
     renderImportView();
-    
+
     // Simplified test
     expect(screen.getByText('📥 Import Google Timeline Data')).toBeInTheDocument();
   });
 
   it('handles drag and drop interface', async () => {
     renderImportView();
-    
+
     const dropZone = screen.getByText('Drag and drop your Google Timeline JSON file').closest('div');
     expect(dropZone).toBeInTheDocument();
-    
+
     // Simulate drag over
     fireEvent.dragOver(dropZone!);
     expect(screen.getByText('Drop your file here')).toBeInTheDocument();
-    
+
     // Simulate drag leave
     fireEvent.dragLeave(dropZone!);
     expect(screen.getByText('Drag and drop your Google Timeline JSON file')).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe('ImportView Integration Tests', () => {
     // This would require mocking initial state with import sessions
     // For now, just verify the component renders without sessions
     renderImportView();
-    
+
     // Should not show import history section when no sessions
     expect(screen.queryByText('Import History')).not.toBeInTheDocument();
   });

@@ -79,7 +79,7 @@ describe('ImportView Helper Functions', () => {
   describe('parseCoordinates', () => {
     it('parses valid coordinate strings correctly', () => {
       const result = parseCoordinates('37.7749°, -122.4194°');
-      
+
       expect(result).toEqual({
         lat: 37.7749,
         lng: -122.4194,
@@ -88,7 +88,7 @@ describe('ImportView Helper Functions', () => {
 
     it('handles positive coordinates', () => {
       const result = parseCoordinates('1.3521°, 103.8198°');
-      
+
       expect(result).toEqual({
         lat: 1.3521,
         lng: 103.8198,
@@ -97,7 +97,7 @@ describe('ImportView Helper Functions', () => {
 
     it('handles high precision coordinates', () => {
       const result = parseCoordinates('37.774929°, -122.419416°');
-      
+
       expect(result).toEqual({
         lat: 37.774929,
         lng: -122.419416,
@@ -106,7 +106,7 @@ describe('ImportView Helper Functions', () => {
 
     it('handles zero coordinates', () => {
       const result = parseCoordinates('0°, 0°');
-      
+
       expect(result).toEqual({
         lat: 0,
         lng: 0,
@@ -118,45 +118,45 @@ describe('ImportView Helper Functions', () => {
     it('calculates duration in minutes correctly', () => {
       const startTime = '2026-04-01T09:00:00.000Z';
       const endTime = '2026-04-01T09:45:00.000Z';
-      
+
       const duration = calculateVisitDuration(startTime, endTime);
-      
+
       expect(duration).toBe(45);
     });
 
     it('handles short durations', () => {
       const startTime = '2026-04-01T09:00:00.000Z';
       const endTime = '2026-04-01T09:05:00.000Z';
-      
+
       const duration = calculateVisitDuration(startTime, endTime);
-      
+
       expect(duration).toBe(5);
     });
 
     it('handles long durations', () => {
       const startTime = '2026-04-01T09:00:00.000Z';
       const endTime = '2026-04-01T15:30:00.000Z';
-      
+
       const duration = calculateVisitDuration(startTime, endTime);
-      
+
       expect(duration).toBe(390); // 6.5 hours
     });
 
     it('handles cross-day durations', () => {
       const startTime = '2026-04-01T23:00:00.000Z';
       const endTime = '2026-04-02T01:00:00.000Z';
-      
+
       const duration = calculateVisitDuration(startTime, endTime);
-      
+
       expect(duration).toBe(120); // 2 hours
     });
 
     it('rounds to nearest minute', () => {
       const startTime = '2026-04-01T09:00:00.000Z';
       const endTime = '2026-04-01T09:00:30.000Z'; // 30 seconds
-      
+
       const duration = calculateVisitDuration(startTime, endTime);
-      
+
       expect(duration).toBe(1); // rounds up to 1 minute
     });
   });
@@ -183,7 +183,7 @@ describe('ImportView Helper Functions', () => {
 
     it('identifies valid cafe visits', () => {
       const visit = createMockVisit();
-      
+
       expect(isLikelyCafe(visit)).toBe(true);
     });
 
@@ -191,7 +191,7 @@ describe('ImportView Helper Functions', () => {
       const visit = createMockVisit({
         endTime: '2026-04-01T09:10:00.000Z' // 10 minutes
       });
-      
+
       expect(isLikelyCafe(visit)).toBe(false);
     });
 
@@ -199,35 +199,35 @@ describe('ImportView Helper Functions', () => {
       const visit = createMockVisit({
         endTime: '2026-04-01T14:00:00.000Z' // 5 hours
       });
-      
+
       expect(isLikelyCafe(visit)).toBe(false);
     });
 
     it('rejects visits with low probability (≤ 0.3)', () => {
       const visit = createMockVisit();
       visit.visit.probability = 0.2;
-      
+
       expect(isLikelyCafe(visit)).toBe(false);
     });
 
     it('accepts visits with exactly 0.3 probability threshold', () => {
       const visit = createMockVisit();
       visit.visit.probability = 0.31; // Just above threshold
-      
+
       expect(isLikelyCafe(visit)).toBe(true);
     });
 
     it('rejects HOME semantic type', () => {
       const visit = createMockVisit();
       visit.visit.topCandidate.semanticType = 'HOME';
-      
+
       expect(isLikelyCafe(visit)).toBe(false);
     });
 
     it('rejects WORK semantic type', () => {
       const visit = createMockVisit();
       visit.visit.topCandidate.semanticType = 'WORK';
-      
+
       expect(isLikelyCafe(visit)).toBe(false);
     });
 
@@ -235,7 +235,7 @@ describe('ImportView Helper Functions', () => {
       const visit = createMockVisit({
         endTime: '2026-04-01T09:15:00.000Z' // Exactly 15 minutes
       });
-      
+
       expect(isLikelyCafe(visit)).toBe(true);
     });
 
@@ -243,7 +243,7 @@ describe('ImportView Helper Functions', () => {
       const visit = createMockVisit({
         endTime: '2026-04-01T13:00:00.000Z' // Exactly 4 hours (240 minutes)
       });
-      
+
       expect(isLikelyCafe(visit)).toBe(true);
     });
   });
@@ -273,7 +273,7 @@ describe('ImportView Helper Functions', () => {
 
     it('creates cafe object with correct structure', () => {
       const cafe = createCafeFromVisit(mockVisit);
-      
+
       expect(cafe).toEqual({
         name: 'Blue Bottle Coffee',
         address: '37.774929, -122.419416',
@@ -305,16 +305,16 @@ describe('ImportView Helper Functions', () => {
           }
         }
       };
-      
+
       const cafe = createCafeFromVisit(visitWithoutName);
-      
+
       expect(cafe.name).toBe('Location yG83frY4'); // Last 8 chars of placeId
     });
 
     it('generates unique visit IDs', () => {
       const cafe1 = createCafeFromVisit(mockVisit);
       const cafe2 = createCafeFromVisit(mockVisit);
-      
+
       expect(cafe1.visits[0].id).not.toBe(cafe2.visits[0].id);
     });
 
@@ -323,16 +323,16 @@ describe('ImportView Helper Functions', () => {
         ...mockVisit,
         endTime: '2026-04-01T09:30:00.000Z' // 30 minutes
       };
-      
+
       const cafe = createCafeFromVisit(shortVisit);
-      
+
       expect(cafe.visits[0].duration).toBe(30);
       expect(cafe.visits[0].notes).toBe('Imported from Google Timeline (30 min visit)');
     });
 
     it('preserves original timestamp format', () => {
       const cafe = createCafeFromVisit(mockVisit);
-      
+
       expect(cafe.visits[0].visitedAt).toBe('2026-04-01T09:00:00.000Z');
     });
   });

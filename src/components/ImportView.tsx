@@ -265,7 +265,7 @@ export default function ImportView() {
           <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
             <li>Visit duration: 15 minutes to 4 hours</li>
             <li>Location type: Unknown (non-home/work places)</li>
-            <li>High location confidence (&gt;30%)</li>
+            <li>High location confidence ({'>'}30%)</li>
           </ul>
         </div>
 
@@ -400,54 +400,6 @@ export default function ImportView() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={(e) => handleFileSelect(e.target.files)}
-          style={{ display: 'none' }}
-        />
-
-        {isProcessing ? (
-          <div>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-            <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Processing Timeline Data...</div>
-            <div style={{ color: '#666' }}>This may take a few moments</div>
-          </div>
-        ) : (
-          <div>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📁</div>
-            <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-              {isDragOver ? 'Drop your file here' : 'Drag and drop your Google Timeline JSON file'}
-            </div>
-            <div style={{ color: '#666' }}>or click to browse</div>
-          </div>
-        )}
-      </div>
-
-      {/* Sample Data Section */}
-      <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '8px' }}>
-        <h3 style={{ margin: '0 0 1rem 0' }}>Don't have Google Timeline data?</h3>
-        <p style={{ color: '#666', marginBottom: '1rem' }}>
-          You can start by manually adding cafes on the map view, or try the sample data to explore the app.
-        </p>
-        <button
-          onClick={loadSampleData}
-          style={{
-            padding: '0.5rem 1rem',
-            background: '#17a2b8',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          Load Sample Data
-        </button>
-      </div>
     </div>
   );
 }

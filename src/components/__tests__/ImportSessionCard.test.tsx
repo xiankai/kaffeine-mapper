@@ -38,7 +38,7 @@ function ImportSessionCard({ session }: ImportSessionCardProps) {
           <span>{getStatusIcon(session.status)}</span>
           <strong>{session.filename}</strong>
         </div>
-        <div style={{ 
+        <div style={{
           color: getStatusColor(session.status),
           fontWeight: 'bold',
           fontSize: '0.9rem'
@@ -46,7 +46,7 @@ function ImportSessionCard({ session }: ImportSessionCardProps) {
           {session.status.toUpperCase()}
         </div>
       </div>
-      
+
       <div style={{ fontSize: '0.9rem', color: '#666' }}>
         <div>📅 Imported: {new Date(session.importedAt).toLocaleString()}</div>
         <div>📊 Processed: {session.processedLocations} / {session.totalLocations} locations</div>
@@ -74,7 +74,7 @@ describe('ImportSessionCard', () => {
 
   it('renders completed session correctly', () => {
     render(<ImportSessionCard session={baseSession} />);
-    
+
     expect(screen.getByText('✅')).toBeInTheDocument();
     expect(screen.getByText('timeline-2026-04-04.json')).toBeInTheDocument();
     expect(screen.getByText('COMPLETED')).toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('ImportSessionCard', () => {
     };
 
     render(<ImportSessionCard session={processingSession} />);
-    
+
     expect(screen.getByText('⏳')).toBeInTheDocument();
     expect(screen.getByText('PROCESSING')).toBeInTheDocument();
     expect(screen.getByText('📊 Processed: 500 / 1000 locations')).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('ImportSessionCard', () => {
     };
 
     render(<ImportSessionCard session={errorSession} />);
-    
+
     expect(screen.getByText('❌')).toBeInTheDocument();
     expect(screen.getByText('ERROR')).toBeInTheDocument();
     expect(screen.getByText('❌ Error: Invalid JSON format')).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('ImportSessionCard', () => {
 
   it('formats import date correctly', () => {
     render(<ImportSessionCard session={baseSession} />);
-    
+
     // The exact format depends on locale, but should contain date elements
     const dateElement = screen.getByText(/📅 Imported:/);
     expect(dateElement).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe('ImportSessionCard', () => {
 
   it('does not show error section for successful imports', () => {
     render(<ImportSessionCard session={baseSession} />);
-    
+
     expect(screen.queryByText(/❌ Error:/)).not.toBeInTheDocument();
   });
 
@@ -135,7 +135,7 @@ describe('ImportSessionCard', () => {
     };
 
     render(<ImportSessionCard session={zeroSession} />);
-    
+
     expect(screen.getByText('📊 Processed: 0 / 1000 locations')).toBeInTheDocument();
     expect(screen.getByText('☕ Created: 0 cafes')).toBeInTheDocument();
   });
