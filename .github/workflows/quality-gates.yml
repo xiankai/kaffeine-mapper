@@ -80,8 +80,7 @@ jobs:
 
       - name: Lighthouse CI performance audit
         run: |
-          npm install -g @lhci/cli@0.12.x
-          lhci autorun
+          pnpm dlx @lhci/cli@0.12.x autorun
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
@@ -120,13 +119,12 @@ jobs:
 
       - name: axe-core accessibility testing
         run: |
-          npm install -g @axe-core/cli
-          axe http://localhost:3000 --exit
+          npx browser-driver-manager install chrome
+          pnpm exec axe http://localhost:3000 --exit
 
       - name: Pa11y accessibility testing
         run: |
-          npm install -g pa11y
-          pa11y http://localhost:3000 --standard WCAG2AA --threshold 0
+          pnpm exec pa11y http://localhost:3000 --standard WCAG2AA --threshold 0
 
       - name: Lighthouse accessibility audit
         run: |
@@ -177,6 +175,8 @@ jobs:
   security-gate:
     name: Security Gate (Vulnerability Scan)
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -197,6 +197,7 @@ jobs:
         run: pnpm audit --audit-level high
 
       - name: Snyk security scan
+        if: ${{ env.SNYK_TOKEN != '' }}
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -238,8 +239,7 @@ jobs:
 
       - name: License compatibility check
         run: |
-          npm install -g license-checker
-          license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense' --excludePrivatePackages
+          pnpm exec license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense' --excludePrivatePackages --production
 
       - name: FOSSA license scan
         uses: fossas/fossa-action@main

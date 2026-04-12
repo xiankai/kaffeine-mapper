@@ -23,6 +23,7 @@ module.exports = {
     "react",
     "react-hooks",
     "@typescript-eslint",
+    "import",
   ],
   settings: {
     react: {
