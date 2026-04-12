@@ -1,13 +1,17 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider } from './context/AppContext';
-import Navigation from './components/Navigation';
-import MapView from './components/MapView';
-import TimelineView from './components/TimelineView';
-import ListView from './components/ListView';
-import CafeDetails from './components/CafeDetails';
-import ImportView from './components/ImportView';
-import './App.css';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AppProvider } from "./context/AppContext";
+import Navigation from "./components/Navigation";
+import MapView from "./components/MapView";
+import TimelineView from "./components/TimelineView";
+import ListView from "./components/ListView";
+import CafeDetails from "./components/CafeDetails";
+import ImportView from "./components/ImportView";
+import "./App.css";
 
 function App() {
   return (

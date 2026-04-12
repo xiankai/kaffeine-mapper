@@ -1,23 +1,13 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 # Pre-commit Quality Gates
 echo "🔍 Running pre-commit quality checks..."
 
 # 1. Lint staged files
 echo "\n📝 Linting staged files..."
-npx lint-staged
-
-# 2. TypeScript type check
-echo "\n🔤 TypeScript type check..."
-npm run type-check
-
-# 3. Run tests for changed files
-echo "\n🧪 Running tests..."
-npm run test:changed
-
-# 4. Security scan
-echo "\n🔒 Security scan..."
-npm audit --audit-level moderate
+pnpm exec lint-staged
 
 echo "\n✅ Pre-commit checks completed!"

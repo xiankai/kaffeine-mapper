@@ -1,31 +1,33 @@
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Mock browser APIs that may not be available in test environment
-Object.defineProperty(window, 'alert', {
+Object.defineProperty(window, "alert", {
   value: jest.fn(),
   writable: true,
 });
 
-Object.defineProperty(window, 'FileReader', {
+Object.defineProperty(window, "FileReader", {
   value: class FileReader {
     result: string | null = null;
-    readAsText = jest.fn().mockImplementation((file: File) => {
+    readAsText = jest.fn().mockImplementation(() => {
       // Simulate async file reading
       setTimeout(() => {
-        this.result = 'mock file content';
+        this.result = "mock file content";
         if (this.onload) {
-          this.onload({ target: { result: this.result } } as any);
+          this.onload({
+            target: { result: this.result },
+          } as unknown as ProgressEvent);
         }
       }, 0);
     });
-    onload: ((event: any) => void) | null = null;
+    onload: ((event: ProgressEvent) => void) | null = null;
   },
   writable: true,
 });
 
 // Mock Date.now for consistent test results
 let mockDate = 1609459200000; // 2021-01-01 00:00:00 UTC
-Object.defineProperty(global.Date, 'now', {
+Object.defineProperty(global.Date, "now", {
   value: jest.fn(() => mockDate),
   writable: true,
 });

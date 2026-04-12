@@ -16,19 +16,19 @@
     "lint:fix": "eslint src/ --ext .ts,.tsx,.js,.jsx --fix",
     "type-check": "tsc --noEmit",
     "imports:check": "eslint src/ --rule 'import/order: error' --rule 'import/no-cycle: error'",
-    "build:analyze": "npm run build && npx vite-bundle-analyzer dist/",
+    "build:analyze": "pnpm run build && pnpm exec vite-bundle-analyzer dist/",
     "analyze:bundle": "node scripts/check-bundle-size.js",
-    "perf:audit": "npx lighthouse http://localhost:3000 --view",
+    "perf:audit": "pnpm dlx lighthouse http://localhost:3000 --view",
     "a11y:test": "axe http://localhost:3000",
-    "a11y:audit": "npx lighthouse http://localhost:3000 --only-categories=accessibility --view",
+    "a11y:audit": "pnpm dlx lighthouse http://localhost:3000 --only-categories=accessibility --view",
     "a11y:check": "node scripts/check-a11y-score.js",
-    "security:audit": "npm audit",
-    "security:scan": "npx snyk test",
-    "security:deps": "npx audit-ci --moderate",
+    "security:audit": "pnpm audit",
+    "security:scan": "pnpm exec snyk test",
+    "security:deps": "pnpm exec audit-ci --moderate",
     "license:check": "license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense'",
     "license:report": "license-report --output=html --only=prod > license-report.html",
-    "quality:all": "npm run lint:check && npm run type-check && npm run test:coverage && npm run security:audit",
-    "quality:fast": "npm run lint:check && npm run type-check && npm run test:changed",
+    "quality:all": "pnpm run lint:check && pnpm run type-check && pnpm run test:coverage && pnpm run security:audit",
+    "quality:fast": "pnpm run lint:check && pnpm run type-check && pnpm run test:changed",
     "prepare": "husky install",
     "postinstall": "husky install"
   },
@@ -41,7 +41,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",
-    "react-leaflet-markercluster": "^5.0.0-rc.0",
+    "react-leaflet-markercluster": "^4.2.1",
     "react-router-dom": "^7.14.0"
   },
   "devDependencies": {
@@ -83,8 +83,16 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged && npm run quality:fast",
-      "pre-push": "npm run quality:all"
+      "pre-commit": "lint-staged && pnpm run quality:fast",
+      "pre-push": "pnpm run quality:all"
     }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "chromedriver",
+      "esbuild",
+      "puppeteer",
+      "snyk"
+    ]
   }
 }

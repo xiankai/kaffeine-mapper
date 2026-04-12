@@ -5,8 +5,8 @@ module.exports = {
   // Setup files
   setupFilesAfterEnv: ["<rootDir>/src/test/setup.ts"],
 
-  // Module name mapping for aliases
-  moduleNameMapping: {
+  // Module name mapper for aliases and static assets
+  moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@components/(.*)$": "<rootDir>/src/components/$1",
     "^@utils/(.*)$": "<rootDir>/src/utils/$1",
@@ -36,7 +36,7 @@ module.exports = {
   ],
 
   // Coverage configuration - ENFORCED THRESHOLDS
-  collectCoverage: true,
+  // collectCoverage is NOT set here so it only activates with --coverage flag (e.g. test:coverage)
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts",
@@ -84,12 +84,6 @@ module.exports = {
   // Coverage directory
   coverageDirectory: "coverage",
 
-  // Mock static assets
-  moduleNameMapping: {
-    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-    "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$":
-      "<rootDir>/src/test/__mocks__/fileMock.js",
-  },
 
   // Test timeout
   testTimeout: 10000,

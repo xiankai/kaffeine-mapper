@@ -1,6 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { NavLink } from "react-router-dom";
+import { useApp } from "../context/AppContext";
 
 export default function Navigation() {
   const { state } = useApp();
@@ -8,15 +7,13 @@ export default function Navigation() {
 
   return (
     <nav className="navigation">
-      <div className="nav-brand">
-        ☕ Kaffeine Mapper
-      </div>
+      <div className="nav-brand">☕ Kaffeine Mapper</div>
 
       <ul className="nav-links">
         <li>
           <NavLink
             to="/map"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
           >
             📍 Map
           </NavLink>
@@ -24,7 +21,7 @@ export default function Navigation() {
         <li>
           <NavLink
             to="/timeline"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
           >
             📅 Timeline
           </NavLink>
@@ -32,7 +29,7 @@ export default function Navigation() {
         <li>
           <NavLink
             to="/list"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
           >
             📋 List ({cafes.length})
           </NavLink>
@@ -40,7 +37,7 @@ export default function Navigation() {
         <li>
           <NavLink
             to="/import"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
           >
             📥 Import
           </NavLink>
