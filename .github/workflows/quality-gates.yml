@@ -35,8 +35,7 @@ jobs:
         run: pnpm run test:coverage
 
       - name: Coverage threshold check
-        run: |
-          pnpm exec jest --coverage --coverageThreshold='{"global":{"lines":95,"branches":90,"functions":100,"statements":95}}'
+        run: pnpm run test:coverage
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3

@@ -2,5 +2,7 @@
   "*.{ts,tsx,js,jsx}": ["eslint --fix --max-warnings 0", "prettier --write"],
   "*.{json,md,yml,yaml}": ["prettier --write"],
   "*.{ts,tsx}": ["bash -c 'npm run type-check'"],
-  "src/**/*.{ts,tsx}": ["jest --bail --findRelatedTests --passWithNoTests"]
+  "src/**/*.{ts,tsx}": [
+    "jest --bail --findRelatedTests --passWithNoTests --maxWorkers=2"
+  ]
 }
