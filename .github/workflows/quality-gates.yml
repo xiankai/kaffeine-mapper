@@ -109,10 +109,13 @@ jobs:
           node-version: "24"
           cache: "pnpm"
 
-      - name: Install system Chrome
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable chromium-driver
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Setup ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -126,8 +129,7 @@ jobs:
           pnpm dlx wait-on http://localhost:3000 --timeout 60000
 
       - name: axe-core accessibility testing
-        run: |
-          pnpm exec axe http://localhost:3000 --exit --chromedriver-path /usr/bin/chromedriver
+        run: pnpm exec axe http://localhost:3000 --exit
 
       - name: Pa11y accessibility testing
         run: pnpm exec pa11y http://localhost:3000
