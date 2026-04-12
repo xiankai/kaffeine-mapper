@@ -257,7 +257,7 @@ jobs:
           pnpm exec license-report --output=json --only=prod > license-report.json
 
       - name: Upload license report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: license-report
           path: license-report.*
