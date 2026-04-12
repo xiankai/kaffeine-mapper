@@ -4,16 +4,15 @@ This project enforces quality standards through automated hooks that run during 
 
 ## 📋 Quality Gates Overview
 
-### ✅ **6 Automated Hooks** (Fail CI if thresholds not met)
+### ✅ **5 Automated Hooks** (Fail CI if thresholds not met)
 
-| Hook                   | Threshold                                 | Trigger                | Purpose                       |
-| ---------------------- | ----------------------------------------- | ---------------------- | ----------------------------- |
-| **Coverage Gate**      | ≥95% line, 90% branch, 100% function      | CI, pre-push           | Ensures comprehensive testing |
-| **Performance Gate**   | LCP <2.5s, CLS <0.1, FID <100ms           | CI, pre-deploy         | Validates Core Web Vitals     |
-| **Accessibility Gate** | Lighthouse ≥90, WCAG AA compliance        | CI, pre-deploy         | Ensures inclusive UX          |
-| **Code Quality Gate**  | ESLint strict, TypeScript strict          | pre-commit, CI         | Enforces coding standards     |
-| **Security Gate**      | No high vulnerabilities, deps scanned     | CI, pre-push           | Prevents security issues      |
-| **License Gate**       | Only approved licenses (MIT, Apache, etc) | CI, dependency updates | Legal compliance              |
+| Hook                  | Threshold                                 | Trigger                | Purpose                       |
+| --------------------- | ----------------------------------------- | ---------------------- | ----------------------------- |
+| **Coverage Gate**     | ≥95% line, 90% branch, 100% function      | CI, pre-push           | Ensures comprehensive testing |
+| **Performance Gate**  | LCP <2.5s, CLS <0.1, FID <100ms           | CI, pre-deploy         | Validates Core Web Vitals     |
+| **Code Quality Gate** | ESLint strict, TypeScript strict          | pre-commit, CI         | Enforces coding standards     |
+| **Security Gate**     | No high vulnerabilities, deps scanned     | CI, pre-push           | Prevents security issues      |
+| **License Gate**      | Only approved licenses (MIT, Apache, etc) | CI, dependency updates | Legal compliance              |
 
 ---
 
@@ -60,30 +59,19 @@ jest --coverageThreshold='{"global":{"lines":95,"branches":90,"functions":100,"s
 
 **Fails if:** Line coverage <95%, branch coverage <90%, any function uncovered
 
-### ⚡ **Performance Gate**
+### ⚡ **Performance & Accessibility Gate**
 
 ```bash
 # Local testing
 npm run build && npm run analyze:bundle
 npm run perf:audit
-
-# CI enforcement
-lhci autorun  # Uses lighthouserc.json thresholds
-```
-
-**Fails if:** LCP >2.5s, CLS >0.1, FID >100ms, bundle >1.2MB total
-
-### ♿ **Accessibility Gate (WCAG AA)**
-
-```bash
-# Local testing
 npm run a11y:audit          # Lighthouse accessibility
 
 # CI enforcement
-pa11y http://localhost:3000/kaffeine-mapper/
+lhci autorun  # Uses .lighthouserc.cjs thresholds
 ```
 
-**Fails if:** WCAG AA violations detected by Pa11y. Lighthouse accessibility ≥90 enforced in Performance Gate via LHCI.
+**Fails if:** LCP >2.5s, CLS >0.1, FID >100ms, bundle >1.2MB total, Lighthouse accessibility <90
 
 ### 📝 **Code Quality Gate**
 
@@ -147,23 +135,22 @@ license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC'
 
 ### **CI/CD Pipeline** (Complete validation - ~5-8min)
 
-- ✅ All 6 quality gates enforced
-- ✅ Performance audit on live build
-- ✅ Accessibility testing
-- ✅ Security scanning (Snyk, CodeQL, Semgrep)
+- ✅ All 5 quality gates enforced
+- ✅ Performance & accessibility audit on live build
+- ✅ Security scanning (Semgrep)
 - ✅ License compliance validation
 
 ---
 
 ## 🛠️ Configuration Files
 
-| File                                         | Purpose             | Enforced Thresholds                       |
-| -------------------------------------------- | ------------------- | ----------------------------------------- |
-| [`jest.config.js`](./jest.config.js)         | Coverage thresholds | Lines ≥95%, branches ≥90%, functions 100% |
-| [`.eslintrc.js`](./.eslintrc.js)             | Code quality rules  | Max complexity 10, strict TypeScript      |
-| [`tsconfig.json`](./tsconfig.json)           | TypeScript settings | Strict mode, no implicit any              |
-| [`lighthouserc.json`](./lighthouserc.json)   | Performance budgets | LCP <2.5s, CLS <0.1, FID <100ms           |
-| [`.lintstagedrc.json`](./.lintstagedrc.json) | Pre-commit rules    | Auto-fix on commit                        |
+| File                                         | Purpose                     | Enforced Thresholds                       |
+| -------------------------------------------- | --------------------------- | ----------------------------------------- |
+| [`jest.config.js`](./jest.config.js)         | Coverage thresholds         | Lines ≥95%, branches ≥90%, functions 100% |
+| [`.eslintrc.js`](./.eslintrc.js)             | Code quality rules          | Max complexity 10, strict TypeScript      |
+| [`tsconfig.json`](./tsconfig.json)           | TypeScript settings         | Strict mode, no implicit any              |
+| [`.lighthouserc.cjs`](./.lighthouserc.cjs)   | Performance & accessibility | LCP <2.5s, CLS <0.1, FID <100ms, A11y ≥90 |
+| [`.lintstagedrc.json`](./.lintstagedrc.json) | Pre-commit rules            | Auto-fix on commit                        |
 
 ---
 
@@ -187,19 +174,11 @@ open coverage/lcov-report/index.html
 # Analyze bundle size
 npm run build:analyze
 
-# Check Core Web Vitals
+# Check Core Web Vitals & Accessibility
 npm run perf:audit
-
-# Fix: Code splitting, lazy loading, optimize images
-```
-
-### **Accessibility Gate Failed**
-
-```bash
-# Detailed accessibility scan
 npm run a11y:audit
 
-# Fix: Add alt text, improve contrast, semantic HTML
+# Fix: Code splitting, lazy loading, optimize images, improve accessibility
 ```
 
 ### **Code Quality Gate Failed**

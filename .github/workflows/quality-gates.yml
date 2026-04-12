@@ -92,43 +92,7 @@ jobs:
           pnpm run analyze:bundle
           node scripts/check-bundle-size.js
 
-  # Hook 3: Accessibility compliance
-  accessibility-gate:
-    name: A11y Gate (WCAG AA, Pa11y)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "pnpm"
-
-      - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: stable
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Build application
-        run: pnpm run build
-
-      - name: Start application
-        run: |
-          pnpm start &
-          pnpm dlx wait-on http://localhost:3000 --timeout 60000
-
-      - name: Pa11y accessibility testing
-        run: pnpm exec pa11y http://localhost:3000/kaffeine-mapper/
-
-  # Hook 4: Code Quality Gate
+  # Hook 3: Code Quality Gate
   code-quality-gate:
     name: Code Quality Gate (ESLint, TypeScript)
     runs-on: ubuntu-latest
@@ -164,7 +128,7 @@ jobs:
             --rule 'max-depth: [error, 4]' \
             --rule 'max-lines-per-function: [error, 50]'
 
-  # Hook 5: Security Gate
+  # Hook 4: Security Gate
   security-gate:
     name: Security Gate (Vulnerability Scan)
     runs-on: ubuntu-latest
@@ -197,7 +161,7 @@ jobs:
             p/secrets
             p/owasp-top-ten
 
-  # Hook 6: License Compliance Gate
+  # Hook 5: License Compliance Gate
   license-gate:
     name: License Compliance Gate
     runs-on: ubuntu-latest

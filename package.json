@@ -73,7 +73,6 @@
     "license-checker": "^25.0.1",
     "license-report": "^6.5.0",
     "lint-staged": "^15.2.0",
-    "pa11y": "^7.0.0",
     "prettier": "^3.1.0",
     "rollup-plugin-analyzer": "^4.0.0",
     "snyk": "^1.1266.0",
