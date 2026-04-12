@@ -77,15 +77,13 @@ lhci autorun  # Uses lighthouserc.json thresholds
 
 ```bash
 # Local testing
-npm run a11y:test           # axe-core scan
 npm run a11y:audit          # Lighthouse accessibility
 
 # CI enforcement
-axe http://localhost:3000/kaffeine-mapper/ --exit
 pa11y http://localhost:3000/kaffeine-mapper/
 ```
 
-**Fails if:** WCAG AA violations detected by axe-core or Pa11y. Lighthouse accessibility ≥90 enforced in Performance Gate via LHCI.
+**Fails if:** WCAG AA violations detected by Pa11y. Lighthouse accessibility ≥90 enforced in Performance Gate via LHCI.
 
 ### 📝 **Code Quality Gate**
 
@@ -199,7 +197,7 @@ npm run perf:audit
 
 ```bash
 # Detailed accessibility scan
-npm run a11y:test
+npm run a11y:audit
 
 # Fix: Add alt text, improve contrast, semantic HTML
 ```

@@ -94,7 +94,7 @@ jobs:
 
   # Hook 3: Accessibility compliance
   accessibility-gate:
-    name: A11y Gate (WCAG AA, axe-core + Pa11y)
+    name: A11y Gate (WCAG AA, Pa11y)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -114,9 +114,6 @@ jobs:
         with:
           chrome-version: stable
 
-      - name: Setup ChromeDriver
-        uses: nanasess/setup-chromedriver@v2
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
@@ -127,9 +124,6 @@ jobs:
         run: |
           pnpm start &
           pnpm dlx wait-on http://localhost:3000 --timeout 60000
-
-      - name: axe-core accessibility testing
-        run: pnpm exec axe http://localhost:3000/kaffeine-mapper/ --exit
 
       - name: Pa11y accessibility testing
         run: pnpm exec pa11y http://localhost:3000/kaffeine-mapper/

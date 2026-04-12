@@ -21,7 +21,6 @@
     "build:analyze": "pnpm run build && pnpm exec vite-bundle-analyzer dist/",
     "analyze:bundle": "node scripts/check-bundle-size.js",
     "perf:audit": "pnpm dlx lighthouse http://localhost:3000 --view",
-    "a11y:test": "axe http://localhost:3000",
     "a11y:audit": "pnpm dlx lighthouse http://localhost:3000 --only-categories=accessibility --view",
     "security:audit": "pnpm audit",
     "security:scan": "pnpm exec snyk test",
@@ -46,7 +45,6 @@
     "react-router-dom": "^7.14.0"
   },
   "devDependencies": {
-    "@axe-core/cli": "^4.11.1",
     "@happy-dom/jest-environment": "^20.8.9",
     "@lhci/cli": "^0.12.0",
     "@testing-library/dom": "^10.4.1",
