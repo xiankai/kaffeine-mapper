@@ -130,10 +130,7 @@ jobs:
           pnpm exec axe http://localhost:3000 --exit --chromedriver-path /usr/bin/chromedriver
 
       - name: Pa11y accessibility testing
-        run: |
-          CHROME_PATH=$(which google-chrome-stable || which google-chrome || which chromium-browser)
-          pnpm exec pa11y http://localhost:3000 --standard WCAG2AA --threshold 0 \
-            --chromeLaunchConfig "{\"executablePath\":\"$CHROME_PATH\",\"args\":[\"--no-sandbox\",\"--disable-setuid-sandbox\"]}"
+        run: pnpm exec pa11y http://localhost:3000
 
       - name: Lighthouse accessibility audit
         run: |
