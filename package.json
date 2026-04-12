@@ -45,7 +45,7 @@
     "react-router-dom": "^7.14.0"
   },
   "devDependencies": {
-    "@axe-core/cli": "^4.8.2",
+    "@axe-core/cli": "^4.11.1",
     "@lhci/cli": "^0.12.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.1.5",
@@ -54,7 +54,7 @@
     "@types/jest": "^29.5.8",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
     "audit-ci": "^6.6.1",
@@ -78,7 +78,7 @@
     "snyk": "^1.1266.0",
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2",
-    "vite": "^5.0.8",
+    "vite": "^5.4.21",
     "vite-bundle-analyzer": "^0.7.0"
   },
   "husky": {
@@ -93,6 +93,18 @@
       "esbuild",
       "puppeteer",
       "snyk"
-    ]
+    ],
+    "overrides": {
+      "ws": ">=8.17.1",
+      "tar-fs": ">=2.1.4 | >=3.0.9",
+      "minimatch": ">=9.0.7",
+      "underscore": ">=1.13.8",
+      "basic-ftp": ">=5.2.2",
+      "esbuild": "0.25.0",
+      "vite": "6.4.2",
+      "cookie": ">=0.7.0",
+      "tmp": ">=0.2.4",
+      "@tootallnate/once": ">=3.0.1"
+    }
   }
 }
