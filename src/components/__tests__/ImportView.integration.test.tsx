@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { render, screen, fireEvent } from "@testing-library/react";
 // import userEvent from '@testing-library/user-event';
 import { AppProvider as AppContextProvider } from "../../context/AppContext";

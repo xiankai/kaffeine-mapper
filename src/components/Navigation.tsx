@@ -7,7 +7,7 @@ export default function Navigation() {
 
   return (
     <nav className="navigation">
-      <div className="nav-brand">☕ Kaffeine Mapper</div>
+      <h1 className="nav-brand">☕ Kaffeine Mapper</h1>
 
       <ul className="nav-links">
         <li>

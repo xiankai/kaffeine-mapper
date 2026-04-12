@@ -9,13 +9,12 @@ import {
 import { useNavigate } from "react-router-dom";
 import L from "leaflet";
 import { useApp } from "../context/AppContext";
-import { CafeLocation, Coordinates } from "../types";
+import { CafeLocation, Coordinates, MapViewSettings } from "../types";
 import "leaflet/dist/leaflet.css";
 
 // Fix for default markers in React-Leaflet with fallback to simple circle marker
 const createMarkerIcon = () => {
   try {
-    // Try CDN first
     return L.icon({
       iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
       shadowUrl:
@@ -26,7 +25,6 @@ const createMarkerIcon = () => {
       shadowSize: [41, 41],
     });
   } catch {
-    // Fallback to circle marker if CDN fails
     return L.divIcon({
       className: "custom-div-icon",
       html: '<div style="background-color: #3388ff; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
@@ -39,6 +37,27 @@ const createMarkerIcon = () => {
 const DefaultIcon = createMarkerIcon();
 L.Marker.prototype.options.icon = DefaultIcon;
 
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "0.5rem",
+  border: "1px solid #ddd",
+  borderRadius: "4px",
+};
+
+type AddCafeFormData = {
+  name: string;
+  address: string;
+  website?: string;
+  phone?: string;
+  notes?: string;
+};
+
+// ─── Map event handler ────────────────────────────────────────────────────────
+
 interface MapEventHandlerProps {
   onMapClick: (coordinates: Coordinates) => void;
   onViewChange?: (center: Coordinates, zoom: number) => void;
@@ -46,127 +65,168 @@ interface MapEventHandlerProps {
 
 function MapEventHandler({ onMapClick, onViewChange }: MapEventHandlerProps) {
   const map = useMapEvents({
-    click: (e) => {
-      onMapClick({
-        latitude: e.latlng.lat,
-        longitude: e.latlng.lng,
-      });
-    },
+    click: (e) =>
+      onMapClick({ latitude: e.latlng.lat, longitude: e.latlng.lng }),
     moveend: () => {
       if (onViewChange) {
-        const center = map.getCenter();
-        const zoom = map.getZoom();
-        onViewChange({ latitude: center.lat, longitude: center.lng }, zoom);
+        const c = map.getCenter();
+        onViewChange({ latitude: c.lat, longitude: c.lng }, map.getZoom());
       }
     },
     zoomend: () => {
       if (onViewChange) {
-        const center = map.getCenter();
-        const zoom = map.getZoom();
-        onViewChange({ latitude: center.lat, longitude: center.lng }, zoom);
+        const c = map.getCenter();
+        onViewChange({ latitude: c.lat, longitude: c.lng }, map.getZoom());
       }
     },
   });
   return null;
 }
 
-interface CafeMarkerProps {
+// ─── Cafe popup ───────────────────────────────────────────────────────────────
+
+function CafePopupContent({
+  cafe,
+  onViewDetails,
+}: {
   cafe: CafeLocation;
-  onClick: (cafe: CafeLocation) => void;
+  onViewDetails: () => void;
+}) {
+  return (
+    <div style={{ minWidth: 200 }}>
+      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1rem" }}>{cafe.name}</h3>
+      <p style={{ margin: "0 0 0.5rem 0", fontSize: "0.9rem", color: "#666" }}>
+        {cafe.address}
+      </p>
+      <div style={{ fontSize: "0.8rem", color: "#888" }}>
+        <div>📊 {cafe.totalVisits} visits</div>
+        {cafe.averageRating && <div>⭐ {cafe.averageRating.toFixed(1)}/5</div>}
+        {cafe.lastVisited && (
+          <div>🕒 Last: {new Date(cafe.lastVisited).toLocaleDateString()}</div>
+        )}
+      </div>
+      <button
+        onClick={onViewDetails}
+        style={{
+          marginTop: "0.5rem",
+          padding: "0.25rem 0.5rem",
+          border: "none",
+          borderRadius: "4px",
+          background: "#007bff",
+          color: "white",
+          cursor: "pointer",
+          fontSize: "0.8rem",
+        }}
+      >
+        View Details
+      </button>
+    </div>
+  );
 }
 
-function CafeMarker({ cafe, onClick }: CafeMarkerProps) {
+function CafeMarker({
+  cafe,
+  onClick,
+}: {
+  cafe: CafeLocation;
+  onClick: (cafe: CafeLocation) => void;
+}) {
   const navigate = useNavigate();
-
-  const handleClick = () => {
-    onClick(cafe);
-  };
-
-  const handleViewDetails = () => {
-    navigate(`/cafe/${cafe.id}`);
-  };
-
   return (
     <Marker
       position={[cafe.coordinates.latitude, cafe.coordinates.longitude]}
-      eventHandlers={{
-        click: handleClick,
-      }}
+      eventHandlers={{ click: () => onClick(cafe) }}
     >
       <Popup>
-        <div style={{ minWidth: 200 }}>
-          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1rem" }}>
-            {cafe.name}
-          </h3>
-          <p
-            style={{
-              margin: "0 0 0.5rem 0",
-              fontSize: "0.9rem",
-              color: "#666",
-            }}
-          >
-            {cafe.address}
-          </p>
-          <div style={{ fontSize: "0.8rem", color: "#888" }}>
-            <div>📊 {cafe.totalVisits} visits</div>
-            {cafe.averageRating && (
-              <div>⭐ {cafe.averageRating.toFixed(1)}/5</div>
-            )}
-            {cafe.lastVisited && (
-              <div>
-                🕒 Last: {new Date(cafe.lastVisited).toLocaleDateString()}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleViewDetails}
-            style={{
-              marginTop: "0.5rem",
-              padding: "0.25rem 0.5rem",
-              border: "none",
-              borderRadius: "4px",
-              background: "#007bff",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "0.8rem",
-            }}
-          >
-            View Details
-          </button>
-        </div>
+        <CafePopupContent
+          cafe={cafe}
+          onViewDetails={() => navigate(`/cafe/${cafe.id}`)}
+        />
       </Popup>
     </Marker>
   );
 }
 
+// ─── Map controls toolbar ─────────────────────────────────────────────────────
+
+interface MapControlsProps {
+  cafeCount: number;
+  filteredCount: number;
+  mapSettings: MapViewSettings;
+  onSettingsChange: (s: Partial<MapViewSettings>) => void;
+}
+
+function MapControls({
+  cafeCount,
+  filteredCount,
+  mapSettings,
+  onSettingsChange,
+}: MapControlsProps) {
+  const checkbox = (label: string, key: keyof MapViewSettings) => (
+    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <input
+        type="checkbox"
+        checked={mapSettings[key] as boolean}
+        onChange={(e) => onSettingsChange({ [key]: e.target.checked })}
+      />
+      {label}
+    </label>
+  );
+  return (
+    <div style={{ marginBottom: "1rem" }}>
+      <h2 style={{ margin: "0 0 0.5rem 0" }}>🗺️ Map View</h2>
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        {checkbox("⭐ Favorites only", "showFavoritesOnly")}
+        {checkbox("📍 Cluster markers", "clusterMarkers")}
+        {checkbox("🔥 Visit density", "showVisitDensity")}
+        <div style={{ marginLeft: "auto", fontSize: "0.9rem", color: "#666" }}>
+          Showing {filteredCount} of {cafeCount} cafes • Click map to add cafe
+          {cafeCount === 0 && (
+            <span style={{ color: "#f57c00", marginLeft: "0.5rem" }}>
+              No cafes yet - try importing data or adding manually
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Map view ─────────────────────────────────────────────────────────────────
+
 export default function MapView() {
   const { state, selectCafe, setMapSettings, addCafe } = useApp();
   const { cafes, mapSettings } = state;
-  const [showAddCafeDialog, setShowAddCafeDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [newCafeCoords, setNewCafeCoords] = useState<Coordinates | null>(null);
 
-  const handleMapClick = useCallback((coordinates: Coordinates) => {
-    setNewCafeCoords(coordinates);
-    setShowAddCafeDialog(true);
+  const handleMapClick = useCallback((coords: Coordinates) => {
+    setNewCafeCoords(coords);
+    setShowAddDialog(true);
   }, []);
 
-  const handleCafeClick = useCallback(
-    (cafe: CafeLocation) => {
-      selectCafe(cafe);
-    },
-    [selectCafe],
-  );
-
-  const handleViewChange = useCallback(
-    (center: Coordinates, zoom: number) => {
-      setMapSettings({ center, zoom });
-    },
-    [setMapSettings],
-  );
-
   const filteredCafes = cafes.filter(
-    (cafe) => !mapSettings.showFavoritesOnly || cafe.isFavorite,
+    (c) => !mapSettings.showFavoritesOnly || c.isFavorite,
   );
+
+  const handleAddCafe = (cafeData: AddCafeFormData) => {
+    addCafe({
+      ...cafeData,
+      coordinates: newCafeCoords!,
+      visits: [],
+      isFavorite: false,
+      tags: [],
+    });
+    setShowAddDialog(false);
+    setNewCafeCoords(null);
+  };
 
   return (
     <div
@@ -177,70 +237,12 @@ export default function MapView() {
         padding: "1rem",
       }}
     >
-      <div style={{ marginBottom: "1rem" }}>
-        <h2 style={{ margin: "0 0 0.5rem 0" }}>🗺️ Map View</h2>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-          >
-            <input
-              type="checkbox"
-              checked={mapSettings.showFavoritesOnly}
-              onChange={(e) =>
-                setMapSettings({ showFavoritesOnly: e.target.checked })
-              }
-            />
-            ⭐ Favorites only
-          </label>
-
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-          >
-            <input
-              type="checkbox"
-              checked={mapSettings.clusterMarkers}
-              onChange={(e) =>
-                setMapSettings({ clusterMarkers: e.target.checked })
-              }
-            />
-            📍 Cluster markers
-          </label>
-
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-          >
-            <input
-              type="checkbox"
-              checked={mapSettings.showVisitDensity}
-              onChange={(e) =>
-                setMapSettings({ showVisitDensity: e.target.checked })
-              }
-            />
-            🔥 Visit density
-          </label>
-
-          <div
-            style={{ marginLeft: "auto", fontSize: "0.9rem", color: "#666" }}
-          >
-            Showing {filteredCafes.length} of {cafes.length} cafes • Click map
-            to add cafe
-            {cafes.length === 0 && (
-              <span style={{ color: "#f57c00", marginLeft: "0.5rem" }}>
-                No cafes yet - try importing data or adding manually
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
+      <MapControls
+        cafeCount={cafes.length}
+        filteredCount={filteredCafes.length}
+        mapSettings={mapSettings}
+        onSettingsChange={setMapSettings}
+      />
       <div
         style={{
           flex: 1,
@@ -257,91 +259,98 @@ export default function MapView() {
           zoom={mapSettings.zoom || 13}
           style={{ height: "100%", width: "100%" }}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
+          <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
           <MapEventHandler
             onMapClick={handleMapClick}
-            onViewChange={handleViewChange}
+            onViewChange={(center, zoom) => setMapSettings({ center, zoom })}
           />
-
           {filteredCafes.map((cafe) => (
             <CafeMarker
               key={`cafe-${cafe.id}`}
               cafe={cafe}
-              onClick={handleCafeClick}
+              onClick={selectCafe}
             />
           ))}
         </MapContainer>
       </div>
-
-      {showAddCafeDialog && newCafeCoords && (
+      {showAddDialog && newCafeCoords && (
         <AddCafeDialog
           coordinates={newCafeCoords}
           onClose={() => {
-            setShowAddCafeDialog(false);
+            setShowAddDialog(false);
             setNewCafeCoords(null);
           }}
-          onAdd={(cafeData) => {
-            const newCafe: Omit<
-              CafeLocation,
-              | "id"
-              | "createdAt"
-              | "updatedAt"
-              | "totalVisits"
-              | "lastVisited"
-              | "averageRating"
-            > = {
-              ...cafeData,
-              coordinates: newCafeCoords,
-              visits: [],
-              isFavorite: false,
-              tags: [],
-            };
-            addCafe(newCafe);
-            setShowAddCafeDialog(false);
-            setNewCafeCoords(null);
-          }}
+          onAdd={handleAddCafe}
         />
       )}
     </div>
   );
 }
 
-interface AddCafeDialogProps {
-  coordinates: Coordinates;
-  onClose: () => void;
-  onAdd: (cafeData: {
-    name: string;
-    address: string;
-    website?: string;
-    phone?: string;
-    notes?: string;
-  }) => void;
+// ─── Add cafe dialog ──────────────────────────────────────────────────────────
+
+type FormState = {
+  name: string;
+  address: string;
+  website: string;
+  phone: string;
+  notes: string;
+};
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: "1rem" }}>
+      <label
+        style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}
+      >
+        {label}
+      </label>
+      {children}
+    </div>
+  );
 }
 
-function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [website, setWebsite] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
+function AddCafeDialog({
+  coordinates,
+  onClose,
+  onAdd,
+}: {
+  coordinates: Coordinates;
+  onClose: () => void;
+  onAdd: (d: AddCafeFormData) => void;
+}) {
+  const [form, setForm] = useState<FormState>({
+    name: "",
+    address: "",
+    website: "",
+    phone: "",
+    notes: "",
+  });
+  const set =
+    (k: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim()) {
-      onAdd({
-        name: name.trim(),
-        address:
-          address.trim() ||
-          `${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`,
-        ...(website.trim() && { website: website.trim() }),
-        ...(phone.trim() && { phone: phone.trim() }),
-        ...(notes.trim() && { notes: notes.trim() }),
-      });
-    }
+    if (!form.name.trim()) return;
+    const { name, address, website, phone, notes } = form;
+    const addr =
+      address.trim() ||
+      `${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`;
+    onAdd({
+      name: name.trim(),
+      address: addr,
+      ...(website.trim() && { website: website.trim() }),
+      ...(phone.trim() && { phone: phone.trim() }),
+      ...(notes.trim() && { notes: notes.trim() }),
+    });
   };
 
   return (
@@ -374,58 +383,27 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
           📍 {coordinates.latitude.toFixed(6)},{" "}
           {coordinates.longitude.toFixed(6)}
         </p>
-
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                fontWeight: "bold",
-              }}
-            >
-              Cafe Name *
-            </label>
+          <FormField label="Cafe Name *">
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={form.name}
+              onChange={set("name")}
               placeholder="Enter cafe name"
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-              }}
+              style={inputStyle}
               required
               autoFocus
             />
-          </div>
-
-          <div style={{ marginBottom: "1rem" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                fontWeight: "bold",
-              }}
-            >
-              Address
-            </label>
+          </FormField>
+          <FormField label="Address">
             <input
               type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              value={form.address}
+              onChange={set("address")}
               placeholder="Enter address (optional)"
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-              }}
+              style={inputStyle}
             />
-          </div>
-
+          </FormField>
           <div
             style={{
               display: "grid",
@@ -434,80 +412,33 @@ function AddCafeDialog({ coordinates, onClose, onAdd }: AddCafeDialogProps) {
               marginBottom: "1rem",
             }}
           >
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "0.5rem",
-                  fontWeight: "bold",
-                }}
-              >
-                Website
-              </label>
+            <FormField label="Website">
               <input
                 type="url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
+                value={form.website}
+                onChange={set("website")}
                 placeholder="https://..."
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                }}
+                style={inputStyle}
               />
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "0.5rem",
-                  fontWeight: "bold",
-                }}
-              >
-                Phone
-              </label>
+            </FormField>
+            <FormField label="Phone">
               <input
                 type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                value={form.phone}
+                onChange={set("phone")}
                 placeholder="Phone number"
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                }}
+                style={inputStyle}
               />
-            </div>
+            </FormField>
           </div>
-
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "0.5rem",
-                fontWeight: "bold",
-              }}
-            >
-              Notes
-            </label>
+          <FormField label="Notes">
             <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              value={form.notes}
+              onChange={set("notes")}
               placeholder="Any additional notes about this cafe..."
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                minHeight: "80px",
-                resize: "vertical",
-              }}
+              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
             />
-          </div>
-
+          </FormField>
           <div
             style={{
               display: "flex",

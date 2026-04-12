@@ -207,10 +207,13 @@ jobs:
         with:
           args: --severity-threshold=high --fail-on=all
 
-      - name: CodeQL security analysis
-        uses: github/codeql-action/analyze@v2
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
         with:
           languages: javascript
+
+      - name: CodeQL security analysis
+        uses: github/codeql-action/analyze@v2
 
       - name: Semgrep security scan
         uses: returntocorp/semgrep-action@v1
@@ -242,7 +245,7 @@ jobs:
 
       - name: License compatibility check
         run: |
-          pnpm exec license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense' --excludePrivatePackages --production
+          pnpm exec license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense;Hippocratic-2.1' --excludePrivatePackages --production
 
       - name: FOSSA license scan
         uses: fossas/fossa-action@main

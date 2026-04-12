@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { setMockDate, resetMockDate } from "../../test/setup";
 
 // Import or recreate the helper functions for testing

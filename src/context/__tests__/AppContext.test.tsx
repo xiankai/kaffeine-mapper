@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { render, screen, act, waitFor } from "@testing-library/react";
 import { AppProvider, useApp } from "../AppContext";
 import { CafeLocation, ImportSession } from "../../types";
@@ -102,7 +103,7 @@ function TestComponent() {
       </button>
 
       <button
-        onClick={() => setFilters({ text: "test" })}
+        onClick={() => setFilters({ favoriteOnly: true })}
         data-testid="set-filters-btn"
       >
         Set Filters

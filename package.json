@@ -93,10 +93,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "chromedriver",
-      "esbuild",
-      "puppeteer",
-      "snyk"
+      "esbuild"
     ],
     "overrides": {
       "ws": ">=8.17.1",

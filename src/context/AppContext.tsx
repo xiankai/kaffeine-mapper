@@ -49,72 +49,48 @@ const initialState: AppState = {
   importSessions: [],
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ActionHandler = (state: AppState, action: any) => AppState;
+
+const reducerHandlers: Record<string, ActionHandler> = {
+  SET_CAFES: (state, { cafes }) => ({ ...state, cafes }),
+  ADD_CAFE: (state, { cafe }) => ({ ...state, cafes: [...state.cafes, cafe] }),
+  UPDATE_CAFE: (state, { cafe }) => ({
+    ...state,
+    cafes: state.cafes.map((c) => (c.id === cafe.id ? cafe : c)),
+    selectedCafe:
+      state.selectedCafe?.id === cafe.id ? cafe : state.selectedCafe,
+  }),
+  DELETE_CAFE: (state, { id }) => ({
+    ...state,
+    cafes: state.cafes.filter((c) => c.id !== id),
+    selectedCafe:
+      state.selectedCafe?.id === id ? undefined : state.selectedCafe,
+  }),
+  SELECT_CAFE: (state, { cafe }) => ({ ...state, selectedCafe: cafe }),
+  SET_VIEW: (state, { view }) => ({ ...state, currentView: view }),
+  SET_FILTERS: (state, { filters }) => ({ ...state, filters }),
+  SET_MAP_SETTINGS: (state, { settings }) => ({
+    ...state,
+    mapSettings: { ...state.mapSettings, ...settings },
+  }),
+  SET_LOADING: (state, { loading }) => ({ ...state, isLoading: loading }),
+  SET_ERROR: (state, { error }) => ({ ...state, error }),
+  ADD_IMPORT_SESSION: (state, { session }) => ({
+    ...state,
+    importSessions: [...state.importSessions, session],
+  }),
+  UPDATE_IMPORT_SESSION: (state, { session }) => ({
+    ...state,
+    importSessions: state.importSessions.map((s) =>
+      s.id === session.id ? session : s,
+    ),
+  }),
+};
+
 function appReducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case "SET_CAFES":
-      return { ...state, cafes: action.cafes };
-
-    case "ADD_CAFE":
-      return { ...state, cafes: [...state.cafes, action.cafe] };
-
-    case "UPDATE_CAFE":
-      return {
-        ...state,
-        cafes: state.cafes.map((cafe) =>
-          cafe.id === action.cafe.id ? action.cafe : cafe,
-        ),
-        selectedCafe:
-          state.selectedCafe?.id === action.cafe.id
-            ? action.cafe
-            : state.selectedCafe,
-      };
-
-    case "DELETE_CAFE":
-      return {
-        ...state,
-        cafes: state.cafes.filter((cafe) => cafe.id !== action.id),
-        selectedCafe:
-          state.selectedCafe?.id === action.id ? undefined : state.selectedCafe,
-      };
-
-    case "SELECT_CAFE":
-      return { ...state, selectedCafe: action.cafe };
-
-    case "SET_VIEW":
-      return { ...state, currentView: action.view };
-
-    case "SET_FILTERS":
-      return { ...state, filters: action.filters };
-
-    case "SET_MAP_SETTINGS":
-      return {
-        ...state,
-        mapSettings: { ...state.mapSettings, ...action.settings },
-      };
-
-    case "SET_LOADING":
-      return { ...state, isLoading: action.loading };
-
-    case "SET_ERROR":
-      return { ...state, error: action.error };
-
-    case "ADD_IMPORT_SESSION":
-      return {
-        ...state,
-        importSessions: [...state.importSessions, action.session],
-      };
-
-    case "UPDATE_IMPORT_SESSION":
-      return {
-        ...state,
-        importSessions: state.importSessions.map((session) =>
-          session.id === action.session.id ? action.session : session,
-        ),
-      };
-
-    default:
-      return state;
-  }
+  const handler = reducerHandlers[action.type];
+  return handler ? handler(state, action) : state;
 }
 
 interface AppContextType {
@@ -137,11 +113,8 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
-
-  // Convenience methods
-  const addCafe = (
+function buildAddCafe(dispatch: React.Dispatch<AppAction>) {
+  return (
     cafeData: Omit<
       CafeLocation,
       "id" | "createdAt" | "updatedAt" | "totalVisits"
@@ -156,8 +129,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     dispatch({ type: "ADD_CAFE", cafe });
   };
+}
 
-  const updateCafe = (cafe: CafeLocation) => {
+function buildUpdateCafe(dispatch: React.Dispatch<AppAction>) {
+  return (cafe: CafeLocation) => {
     const ratedVisits = cafe.visits.filter((visit) => visit.rating);
     const updatedCafe: CafeLocation = {
       ...cafe,
@@ -179,7 +154,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     dispatch({ type: "UPDATE_CAFE", cafe: updatedCafe });
   };
+}
 
+export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [state, dispatch] = useReducer(appReducer, initialState);
+
+  const addCafe = buildAddCafe(dispatch);
+  const updateCafe = buildUpdateCafe(dispatch);
   const deleteCafe = (id: string) => dispatch({ type: "DELETE_CAFE", id });
   const selectCafe = (cafe?: CafeLocation) =>
     dispatch({ type: "SELECT_CAFE", cafe });
