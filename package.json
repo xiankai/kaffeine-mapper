@@ -23,7 +23,6 @@
     "perf:audit": "pnpm dlx lighthouse http://localhost:3000 --view",
     "a11y:test": "axe http://localhost:3000",
     "a11y:audit": "pnpm dlx lighthouse http://localhost:3000 --only-categories=accessibility --view",
-    "a11y:check": "node scripts/check-a11y-score.js",
     "security:audit": "pnpm audit",
     "security:scan": "pnpm exec snyk test",
     "security:deps": "pnpm exec audit-ci --moderate",

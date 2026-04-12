@@ -94,7 +94,7 @@ jobs:
 
   # Hook 3: Accessibility compliance
   accessibility-gate:
-    name: A11y Gate (WCAG AA, Lighthouse ≥90)
+    name: A11y Gate (WCAG AA, axe-core + Pa11y)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -129,19 +129,10 @@ jobs:
           pnpm dlx wait-on http://localhost:3000 --timeout 60000
 
       - name: axe-core accessibility testing
-        run: pnpm exec axe http://localhost:3000 --exit
+        run: pnpm exec axe http://localhost:3000/kaffeine-mapper/ --exit
 
       - name: Pa11y accessibility testing
-        run: pnpm exec pa11y http://localhost:3000
-
-      - name: Lighthouse accessibility audit
-        run: |
-          pnpm dlx lighthouse http://localhost:3000 \
-            --only-categories=accessibility \
-            --chrome-flags="--headless --no-sandbox --disable-setuid-sandbox" \
-            --output=json \
-            --output-path=./lighthouse-a11y.json
-          node scripts/check-a11y-score.js
+        run: pnpm exec pa11y http://localhost:3000/kaffeine-mapper/
 
   # Hook 4: Code Quality Gate
   code-quality-gate:

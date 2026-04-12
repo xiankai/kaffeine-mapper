@@ -4,7 +4,8 @@ module.exports = {
       url: ["http://localhost:3000/kaffeine-mapper/"],
       numberOfRuns: 3,
       settings: {
-        chromeFlags: "--no-sandbox --disable-setuid-sandbox",
+        chromeFlags:
+          "--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage",
       },
     },
     assert: {

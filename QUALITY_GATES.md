@@ -6,26 +6,28 @@ This project enforces quality standards through automated hooks that run during 
 
 ### ✅ **6 Automated Hooks** (Fail CI if thresholds not met)
 
-| Hook | Threshold | Trigger | Purpose |
-|------|-----------|---------|---------|
-| **Coverage Gate** | ≥95% line, 90% branch, 100% function | CI, pre-push | Ensures comprehensive testing |
-| **Performance Gate** | LCP <2.5s, CLS <0.1, FID <100ms | CI, pre-deploy | Validates Core Web Vitals |
-| **Accessibility Gate** | Lighthouse ≥90, WCAG AA compliance | CI, pre-deploy | Ensures inclusive UX |
-| **Code Quality Gate** | ESLint strict, TypeScript strict | pre-commit, CI | Enforces coding standards |
-| **Security Gate** | No high vulnerabilities, deps scanned | CI, pre-push | Prevents security issues |
-| **License Gate** | Only approved licenses (MIT, Apache, etc) | CI, dependency updates | Legal compliance |
+| Hook                   | Threshold                                 | Trigger                | Purpose                       |
+| ---------------------- | ----------------------------------------- | ---------------------- | ----------------------------- |
+| **Coverage Gate**      | ≥95% line, 90% branch, 100% function      | CI, pre-push           | Ensures comprehensive testing |
+| **Performance Gate**   | LCP <2.5s, CLS <0.1, FID <100ms           | CI, pre-deploy         | Validates Core Web Vitals     |
+| **Accessibility Gate** | Lighthouse ≥90, WCAG AA compliance        | CI, pre-deploy         | Ensures inclusive UX          |
+| **Code Quality Gate**  | ESLint strict, TypeScript strict          | pre-commit, CI         | Enforces coding standards     |
+| **Security Gate**      | No high vulnerabilities, deps scanned     | CI, pre-push           | Prevents security issues      |
+| **License Gate**       | Only approved licenses (MIT, Apache, etc) | CI, dependency updates | Legal compliance              |
 
 ---
 
 ## 🚀 Quick Start
 
 ### 1. **Setup Hooks**
+
 ```bash
 npm install          # Installs husky hooks automatically
 npm run prepare      # Manual hook setup if needed
 ```
 
 ### 2. **Run Quality Checks Locally**
+
 ```bash
 # Quick checks (pre-commit style)
 npm run quality:fast
@@ -47,6 +49,7 @@ npm run license:check       # License gate
 ## 🔧 Hook Details
 
 ### 🧪 **Coverage Gate (95% Required)**
+
 ```bash
 # Local testing
 npm run test:coverage
@@ -54,9 +57,11 @@ npm run test:coverage
 # CI enforcement
 jest --coverageThreshold='{"global":{"lines":95,"branches":90,"functions":100,"statements":95}}'
 ```
+
 **Fails if:** Line coverage <95%, branch coverage <90%, any function uncovered
 
 ### ⚡ **Performance Gate**
+
 ```bash
 # Local testing
 npm run build && npm run analyze:bundle
@@ -65,22 +70,25 @@ npm run perf:audit
 # CI enforcement
 lhci autorun  # Uses lighthouserc.json thresholds
 ```
+
 **Fails if:** LCP >2.5s, CLS >0.1, FID >100ms, bundle >1.2MB total
 
-### ♿ **Accessibility Gate (Lighthouse ≥90)**
+### ♿ **Accessibility Gate (WCAG AA)**
+
 ```bash
 # Local testing
 npm run a11y:test           # axe-core scan
 npm run a11y:audit          # Lighthouse accessibility
-npm run a11y:check          # Score validation
 
 # CI enforcement
-axe http://localhost:3000 --exit
-node scripts/check-a11y-score.js
+axe http://localhost:3000/kaffeine-mapper/ --exit
+pa11y http://localhost:3000/kaffeine-mapper/
 ```
-**Fails if:** Lighthouse accessibility score <90, WCAG AA violations, missing alt text
+
+**Fails if:** WCAG AA violations detected by axe-core or Pa11y. Lighthouse accessibility ≥90 enforced in Performance Gate via LHCI.
 
 ### 📝 **Code Quality Gate**
+
 ```bash
 # Local testing
 npm run lint:check          # ESLint strict rules
@@ -90,9 +98,11 @@ npm run imports:check       # Import organization
 # CI enforcement
 eslint src/ --max-warnings 0
 ```
+
 **Fails if:** ESLint errors, TypeScript errors, complexity >10, missing types
 
 ### 🔒 **Security Gate**
+
 ```bash
 # Local testing
 npm run security:audit      # npm audit
@@ -103,9 +113,11 @@ npm run security:deps       # Dependency audit
 npm audit --audit-level high
 snyk test --severity-threshold=high
 ```
+
 **Fails if:** High/critical vulnerabilities, malicious dependencies, insecure patterns
 
 ### 📄 **License Gate**
+
 ```bash
 # Local testing
 npm run license:check       # Compatibility check
@@ -114,6 +126,7 @@ npm run license:report      # Generate report
 # CI enforcement
 license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC'
 ```
+
 **Fails if:** GPL/copyleft licenses, incompatible licenses, missing LICENSE file
 
 ---
@@ -121,18 +134,21 @@ license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC'
 ## 🕰️ When Hooks Run
 
 ### **Pre-commit** (Fast checks - ~30s)
+
 - ✅ Lint staged files (ESLint + Prettier)
 - ✅ TypeScript type check
 - ✅ Tests for changed files only
 - ✅ Basic security scan
 
 ### **Pre-push** (Full validation - ~2-3min)
+
 - ✅ Full test suite with coverage gate
 - ✅ Bundle size analysis
 - ✅ Security audit
 - ✅ License compliance check
 
 ### **CI/CD Pipeline** (Complete validation - ~5-8min)
+
 - ✅ All 6 quality gates enforced
 - ✅ Performance audit on live build
 - ✅ Accessibility testing
@@ -143,19 +159,20 @@ license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC'
 
 ## 🛠️ Configuration Files
 
-| File | Purpose | Enforced Thresholds |
-|------|---------|-------------------|
-| [`jest.config.js`](./jest.config.js) | Coverage thresholds | Lines ≥95%, branches ≥90%, functions 100% |
-| [`.eslintrc.js`](./.eslintrc.js) | Code quality rules | Max complexity 10, strict TypeScript |
-| [`tsconfig.json`](./tsconfig.json) | TypeScript settings | Strict mode, no implicit any |
-| [`lighthouserc.json`](./lighthouserc.json) | Performance budgets | LCP <2.5s, CLS <0.1, FID <100ms |
-| [`.lintstagedrc.json`](./.lintstagedrc.json) | Pre-commit rules | Auto-fix on commit |
+| File                                         | Purpose             | Enforced Thresholds                       |
+| -------------------------------------------- | ------------------- | ----------------------------------------- |
+| [`jest.config.js`](./jest.config.js)         | Coverage thresholds | Lines ≥95%, branches ≥90%, functions 100% |
+| [`.eslintrc.js`](./.eslintrc.js)             | Code quality rules  | Max complexity 10, strict TypeScript      |
+| [`tsconfig.json`](./tsconfig.json)           | TypeScript settings | Strict mode, no implicit any              |
+| [`lighthouserc.json`](./lighthouserc.json)   | Performance budgets | LCP <2.5s, CLS <0.1, FID <100ms           |
+| [`.lintstagedrc.json`](./.lintstagedrc.json) | Pre-commit rules    | Auto-fix on commit                        |
 
 ---
 
 ## 🚨 Troubleshooting Failed Gates
 
 ### **Coverage Gate Failed**
+
 ```bash
 # Generate detailed coverage report
 npm run test:coverage -- --verbose
@@ -167,6 +184,7 @@ open coverage/lcov-report/index.html
 ```
 
 ### **Performance Gate Failed**
+
 ```bash
 # Analyze bundle size
 npm run build:analyze
@@ -178,6 +196,7 @@ npm run perf:audit
 ```
 
 ### **Accessibility Gate Failed**
+
 ```bash
 # Detailed accessibility scan
 npm run a11y:test
@@ -186,6 +205,7 @@ npm run a11y:test
 ```
 
 ### **Code Quality Gate Failed**
+
 ```bash
 # Auto-fix linting issues
 npm run lint:fix
@@ -197,6 +217,7 @@ npm run type-check
 ```
 
 ### **Security Gate Failed**
+
 ```bash
 # View detailed vulnerabilities
 npm audit
@@ -209,6 +230,7 @@ npm update
 ```
 
 ### **License Gate Failed**
+
 ```bash
 # View problematic licenses
 npm run license:report
@@ -233,11 +255,10 @@ npm run license:report
 Edit these files to adjust quality gate thresholds:
 
 - **Coverage**: [`jest.config.js`](./jest.config.js) → `coverageThreshold`
-- **Performance**: [`lighthouserc.json`](./lighthouserc.json) → `assert.assertions`
+- **Performance & Accessibility**: [`.lighthouserc.cjs`](./.lighthouserc.cjs) → `assert.assertions`
 - **Bundle Size**: [`scripts/check-bundle-size.js`](./scripts/check-bundle-size.js) → `THRESHOLDS`
-- **Accessibility**: [`scripts/check-a11y-score.js`](./scripts/check-a11y-score.js) → `ACCESSIBILITY_THRESHOLD`
 - **Code Quality**: [`.eslintrc.js`](./.eslintrc.js) → `rules`
 
 ---
 
-*Quality gates ensure code excellence without slowing down development. All gates are designed to run fast and provide actionable feedback.*
+_Quality gates ensure code excellence without slowing down development. All gates are designed to run fast and provide actionable feedback._
