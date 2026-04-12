@@ -1,12 +1,17 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 /**
  * Bundle Size Gate - Enforces bundle size thresholds
  * Fails CI if bundles exceed defined limits
  */
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Bundle size thresholds (in KB)
 const THRESHOLDS = {
@@ -99,8 +104,4 @@ function analyzeBundleSize() {
   console.log("\n✅ Bundle size gate PASSED");
 }
 
-if (require.main === module) {
-  analyzeBundleSize();
-}
-
-module.exports = analyzeBundleSize;
+analyzeBundleSize();

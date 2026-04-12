@@ -1,12 +1,17 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 
 /**
  * Accessibility Score Gate - Enforces Lighthouse accessibility score ≥90
  * Fails CI if accessibility standards not met
  */
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const ACCESSIBILITY_THRESHOLD = 90; // Minimum score required
 
@@ -59,7 +64,7 @@ function checkAccessibilityScore() {
 
   if (criticalFailures.length > 0) {
     console.log("\n❌ Critical Accessibility Issues:");
-    criticalFailures.forEach(([key, audit]) => {
+    criticalFailures.forEach(([_key, audit]) => {
       console.log(`   • ${audit.title}`);
       if (audit.description) {
         console.log(`     ${audit.description}`);
@@ -113,8 +118,4 @@ function checkAccessibilityScore() {
   console.log("\n✅ Accessibility gate PASSED");
 }
 
-if (require.main === module) {
-  checkAccessibilityScore();
-}
-
-module.exports = checkAccessibilityScore;
+checkAccessibilityScore();

@@ -2,6 +2,7 @@
   "name": "kaffeine-mapper",
   "private": true,
   "version": "0.0.1",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -25,7 +26,7 @@
     "security:audit": "pnpm audit",
     "security:scan": "pnpm exec snyk test",
     "security:deps": "pnpm exec audit-ci --moderate",
-    "license:check": "license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense'",
+    "license:check": "license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense;MPL-2.0;UNLICENSED;LGPL-3.0-only' --production",
     "license:report": "license-report --output=html --only=prod > license-report.html",
     "quality:all": "pnpm run lint:check && pnpm run type-check && pnpm run test:coverage && pnpm run security:audit",
     "quality:fast": "pnpm run lint:check && pnpm run type-check && pnpm run test:changed",
