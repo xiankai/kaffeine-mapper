@@ -126,10 +126,8 @@ jobs:
           pnpm dlx wait-on http://localhost:3000 --timeout 60000
 
       - name: axe-core accessibility testing
-        env:
-          CHROMEDRIVER_PATH: /usr/bin/chromedriver
         run: |
-          pnpm exec axe http://localhost:3000 --exit
+          pnpm exec axe http://localhost:3000 --exit --chromedriver-path /usr/bin/chromedriver
 
       - name: Pa11y accessibility testing
         run: |

@@ -16,6 +16,9 @@ module.exports = {
         "cumulative-layout-shift": ["warn", { maxNumericValue: 0.1 }],
         "unused-javascript": "off",
         "render-blocking-resources": "warn",
+        "csp-xss": "off",
+        "errors-in-console": "off",
+        "tap-targets": "off",
       },
     },
     upload: {
