@@ -247,7 +247,7 @@ function LeafletMap({
   );
 }
 
-export default function MapView() {
+function useMapViewState() {
   const { state, selectCafe, setMapSettings, addCafe } = useApp();
   const { cafes, mapSettings } = state;
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -274,6 +274,39 @@ export default function MapView() {
     setNewCafeCoords(null);
   };
 
+  const closeDialog = () => {
+    setShowAddDialog(false);
+    setNewCafeCoords(null);
+  };
+
+  return {
+    cafes,
+    mapSettings,
+    setMapSettings,
+    selectCafe,
+    showAddDialog,
+    newCafeCoords,
+    filteredCafes,
+    handleMapClick,
+    handleAddCafe,
+    closeDialog,
+  };
+}
+
+export default function MapView() {
+  const {
+    cafes,
+    mapSettings,
+    setMapSettings,
+    selectCafe,
+    showAddDialog,
+    newCafeCoords,
+    filteredCafes,
+    handleMapClick,
+    handleAddCafe,
+    closeDialog,
+  } = useMapViewState();
+
   return (
     <div
       style={{
@@ -299,10 +332,7 @@ export default function MapView() {
       {showAddDialog && newCafeCoords && (
         <AddCafeDialog
           coordinates={newCafeCoords}
-          onClose={() => {
-            setShowAddDialog(false);
-            setNewCafeCoords(null);
-          }}
+          onClose={closeDialog}
           onAdd={handleAddCafe}
         />
       )}
@@ -339,15 +369,43 @@ function FormField({
   );
 }
 
-function AddCafeFormFields({
-  form,
-  set,
-}: {
-  form: FormState;
-  set: (
-    k: keyof FormState,
-  ) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-}) {
+type SetField = (
+  k: keyof FormState,
+) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+
+function ContactFields({ form, set }: { form: FormState; set: SetField }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "1rem",
+        marginBottom: "1rem",
+      }}
+    >
+      <FormField label="Website">
+        <input
+          type="url"
+          value={form.website}
+          onChange={set("website")}
+          placeholder="https://..."
+          style={inputStyle}
+        />
+      </FormField>
+      <FormField label="Phone">
+        <input
+          type="tel"
+          value={form.phone}
+          onChange={set("phone")}
+          placeholder="Phone number"
+          style={inputStyle}
+        />
+      </FormField>
+    </div>
+  );
+}
+
+function AddCafeFormFields({ form, set }: { form: FormState; set: SetField }) {
   return (
     <>
       <FormField label="Cafe Name *">
@@ -370,33 +428,7 @@ function AddCafeFormFields({
           style={inputStyle}
         />
       </FormField>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "1rem",
-          marginBottom: "1rem",
-        }}
-      >
-        <FormField label="Website">
-          <input
-            type="url"
-            value={form.website}
-            onChange={set("website")}
-            placeholder="https://..."
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Phone">
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={set("phone")}
-            placeholder="Phone number"
-            style={inputStyle}
-          />
-        </FormField>
-      </div>
+      <ContactFields form={form} set={set} />
       <FormField label="Notes">
         <textarea
           value={form.notes}
@@ -442,15 +474,10 @@ function DialogActions({ onClose }: { onClose: () => void }) {
   );
 }
 
-function AddCafeDialog({
-  coordinates,
-  onClose,
-  onAdd,
-}: {
-  coordinates: Coordinates;
-  onClose: () => void;
-  onAdd: (d: AddCafeFormData) => void;
-}) {
+function useAddCafeForm(
+  coordinates: Coordinates,
+  onAdd: (d: AddCafeFormData) => void,
+) {
   const [form, setForm] = useState<FormState>({
     name: "",
     address: "",
@@ -458,10 +485,8 @@ function AddCafeDialog({
     phone: "",
     notes: "",
   });
-  const set =
-    (k: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set: SetField = (k) => (e) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,6 +503,20 @@ function AddCafeDialog({
       ...(notes.trim() && { notes: notes.trim() }),
     });
   };
+
+  return { form, set, handleSubmit };
+}
+
+function AddCafeDialog({
+  coordinates,
+  onClose,
+  onAdd,
+}: {
+  coordinates: Coordinates;
+  onClose: () => void;
+  onAdd: (d: AddCafeFormData) => void;
+}) {
+  const { form, set, handleSubmit } = useAddCafeForm(coordinates, onAdd);
 
   return (
     <div

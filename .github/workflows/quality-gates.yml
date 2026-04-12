@@ -112,7 +112,7 @@ jobs:
       - name: Install system Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
+          sudo apt-get install -y google-chrome-stable chromium-driver
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -126,15 +126,16 @@ jobs:
           pnpm dlx wait-on http://localhost:3000 --timeout 60000
 
       - name: axe-core accessibility testing
+        env:
+          CHROMEDRIVER_PATH: /usr/bin/chromedriver
         run: |
           pnpm exec axe http://localhost:3000 --exit
 
       - name: Pa11y accessibility testing
-        env:
-          CHROMIUM_FLAGS: "--no-sandbox --disable-setuid-sandbox"
         run: |
+          CHROME_PATH=$(which google-chrome-stable || which google-chrome || which chromium-browser)
           pnpm exec pa11y http://localhost:3000 --standard WCAG2AA --threshold 0 \
-            --chromeLaunchConfig '{"args":["--no-sandbox","--disable-setuid-sandbox"]}'
+            --chromeLaunchConfig "{\"executablePath\":\"$CHROME_PATH\",\"args\":[\"--no-sandbox\",\"--disable-setuid-sandbox\"]}"
 
       - name: Lighthouse accessibility audit
         run: |
@@ -215,12 +216,12 @@ jobs:
           args: --severity-threshold=high --fail-on=all
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript
 
       - name: CodeQL security analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
       - name: Semgrep security scan
         uses: returntocorp/semgrep-action@v1
