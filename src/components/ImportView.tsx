@@ -146,6 +146,27 @@ async function processCafeGroups(
   return { created, processed };
 }
 
+function parseTimelineData(data: TimelineData, file: File) {
+  if (!data.semanticSegments || !Array.isArray(data.semanticSegments)) {
+    throw new Error(
+      "Invalid timeline format. Expected semanticSegments array.",
+    );
+  }
+  const visits = data.semanticSegments.filter(
+    (s) => s.visit && isLikelyCafe(s),
+  );
+  const session: ImportSession = {
+    id: `import_${Date.now()}`,
+    filename: file.name,
+    importedAt: new Date().toISOString(),
+    totalLocations: data.semanticSegments.length,
+    processedLocations: 0,
+    newCafes: 0,
+    status: "processing",
+  };
+  return { visits, session };
+}
+
 async function processTimelineFile(
   file: File,
   addCafe: AddCafeFn,
@@ -157,23 +178,7 @@ async function processTimelineFile(
   setProcessingStats({ total: 0, processed: 0, created: 0 });
   try {
     const data: TimelineData = JSON.parse(await file.text());
-    if (!data.semanticSegments || !Array.isArray(data.semanticSegments)) {
-      throw new Error(
-        "Invalid timeline format. Expected semanticSegments array.",
-      );
-    }
-    const visits = data.semanticSegments.filter(
-      (s) => s.visit && isLikelyCafe(s),
-    );
-    const session: ImportSession = {
-      id: `import_${Date.now()}`,
-      filename: file.name,
-      importedAt: new Date().toISOString(),
-      totalLocations: data.semanticSegments.length,
-      processedLocations: 0,
-      newCafes: 0,
-      status: "processing",
-    };
+    const { visits, session } = parseTimelineData(data, file);
     dispatch({ type: "ADD_IMPORT_SESSION", session });
     setProcessingStats({ total: visits.length, processed: 0, created: 0 });
     const { created, processed } = await processCafeGroups(
@@ -500,8 +505,8 @@ function ImportHistory({ sessions }: { sessions: ImportSession[] }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ImportView() {
-  const { state, addCafe, dispatch } = useApp();
+function useImportState() {
+  const { addCafe, dispatch } = useApp();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStats, setProcessingStats] =
@@ -529,6 +534,29 @@ export default function ImportView() {
     setIsDragOver(false);
     handleFileSelect(e.dataTransfer.files);
   };
+
+  return {
+    isDragOver,
+    setIsDragOver,
+    isProcessing,
+    processingStats,
+    fileInputRef,
+    handleFileSelect,
+    handleDrop,
+  };
+}
+
+export default function ImportView() {
+  const { state, addCafe } = useApp();
+  const {
+    isDragOver,
+    setIsDragOver,
+    isProcessing,
+    processingStats,
+    fileInputRef,
+    handleFileSelect,
+    handleDrop,
+  } = useImportState();
 
   return (
     <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>

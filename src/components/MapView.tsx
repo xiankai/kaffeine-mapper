@@ -201,6 +201,52 @@ function MapControls({
 
 // ─── Map view ─────────────────────────────────────────────────────────────────
 
+interface LeafletMapProps {
+  mapSettings: MapViewSettings;
+  filteredCafes: CafeLocation[];
+  onMapClick: (coords: Coordinates) => void;
+  onViewChange: (center: Coordinates, zoom: number) => void;
+  onCafeClick: (cafe: CafeLocation) => void;
+}
+
+function LeafletMap({
+  mapSettings,
+  filteredCafes,
+  onMapClick,
+  onViewChange,
+  onCafeClick,
+}: LeafletMapProps) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        borderRadius: "8px",
+        overflow: "hidden",
+        border: "1px solid #ddd",
+      }}
+    >
+      <MapContainer
+        center={[
+          mapSettings.center?.latitude || 37.7749,
+          mapSettings.center?.longitude || -122.4194,
+        ]}
+        zoom={mapSettings.zoom || 13}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
+        <MapEventHandler onMapClick={onMapClick} onViewChange={onViewChange} />
+        {filteredCafes.map((cafe) => (
+          <CafeMarker
+            key={`cafe-${cafe.id}`}
+            cafe={cafe}
+            onClick={onCafeClick}
+          />
+        ))}
+      </MapContainer>
+    </div>
+  );
+}
+
 export default function MapView() {
   const { state, selectCafe, setMapSettings, addCafe } = useApp();
   const { cafes, mapSettings } = state;
@@ -243,36 +289,13 @@ export default function MapView() {
         mapSettings={mapSettings}
         onSettingsChange={setMapSettings}
       />
-      <div
-        style={{
-          flex: 1,
-          borderRadius: "8px",
-          overflow: "hidden",
-          border: "1px solid #ddd",
-        }}
-      >
-        <MapContainer
-          center={[
-            mapSettings.center?.latitude || 37.7749,
-            mapSettings.center?.longitude || -122.4194,
-          ]}
-          zoom={mapSettings.zoom || 13}
-          style={{ height: "100%", width: "100%" }}
-        >
-          <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
-          <MapEventHandler
-            onMapClick={handleMapClick}
-            onViewChange={(center, zoom) => setMapSettings({ center, zoom })}
-          />
-          {filteredCafes.map((cafe) => (
-            <CafeMarker
-              key={`cafe-${cafe.id}`}
-              cafe={cafe}
-              onClick={selectCafe}
-            />
-          ))}
-        </MapContainer>
-      </div>
+      <LeafletMap
+        mapSettings={mapSettings}
+        filteredCafes={filteredCafes}
+        onMapClick={handleMapClick}
+        onViewChange={(center, zoom) => setMapSettings({ center, zoom })}
+        onCafeClick={selectCafe}
+      />
       {showAddDialog && newCafeCoords && (
         <AddCafeDialog
           coordinates={newCafeCoords}
@@ -312,6 +335,109 @@ function FormField({
         {label}
       </label>
       {children}
+    </div>
+  );
+}
+
+function AddCafeFormFields({
+  form,
+  set,
+}: {
+  form: FormState;
+  set: (
+    k: keyof FormState,
+  ) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+}) {
+  return (
+    <>
+      <FormField label="Cafe Name *">
+        <input
+          type="text"
+          value={form.name}
+          onChange={set("name")}
+          placeholder="Enter cafe name"
+          style={inputStyle}
+          required
+          autoFocus
+        />
+      </FormField>
+      <FormField label="Address">
+        <input
+          type="text"
+          value={form.address}
+          onChange={set("address")}
+          placeholder="Enter address (optional)"
+          style={inputStyle}
+        />
+      </FormField>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "1rem",
+          marginBottom: "1rem",
+        }}
+      >
+        <FormField label="Website">
+          <input
+            type="url"
+            value={form.website}
+            onChange={set("website")}
+            placeholder="https://..."
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Phone">
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={set("phone")}
+            placeholder="Phone number"
+            style={inputStyle}
+          />
+        </FormField>
+      </div>
+      <FormField label="Notes">
+        <textarea
+          value={form.notes}
+          onChange={set("notes")}
+          placeholder="Any additional notes about this cafe..."
+          style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
+        />
+      </FormField>
+    </>
+  );
+}
+
+function DialogActions({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+      <button
+        type="button"
+        onClick={onClose}
+        style={{
+          padding: "0.5rem 1rem",
+          border: "1px solid #ddd",
+          borderRadius: "4px",
+          background: "#f8f9fa",
+          cursor: "pointer",
+        }}
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        style={{
+          padding: "0.5rem 1rem",
+          border: "none",
+          borderRadius: "4px",
+          background: "#007bff",
+          color: "white",
+          cursor: "pointer",
+        }}
+      >
+        Add Cafe
+      </button>
     </div>
   );
 }
@@ -384,95 +510,8 @@ function AddCafeDialog({
           {coordinates.longitude.toFixed(6)}
         </p>
         <form onSubmit={handleSubmit}>
-          <FormField label="Cafe Name *">
-            <input
-              type="text"
-              value={form.name}
-              onChange={set("name")}
-              placeholder="Enter cafe name"
-              style={inputStyle}
-              required
-              autoFocus
-            />
-          </FormField>
-          <FormField label="Address">
-            <input
-              type="text"
-              value={form.address}
-              onChange={set("address")}
-              placeholder="Enter address (optional)"
-              style={inputStyle}
-            />
-          </FormField>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1rem",
-              marginBottom: "1rem",
-            }}
-          >
-            <FormField label="Website">
-              <input
-                type="url"
-                value={form.website}
-                onChange={set("website")}
-                placeholder="https://..."
-                style={inputStyle}
-              />
-            </FormField>
-            <FormField label="Phone">
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={set("phone")}
-                placeholder="Phone number"
-                style={inputStyle}
-              />
-            </FormField>
-          </div>
-          <FormField label="Notes">
-            <textarea
-              value={form.notes}
-              onChange={set("notes")}
-              placeholder="Any additional notes about this cafe..."
-              style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }}
-            />
-          </FormField>
-          <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              justifyContent: "flex-end",
-            }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: "0.5rem 1rem",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                background: "#f8f9fa",
-                cursor: "pointer",
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              style={{
-                padding: "0.5rem 1rem",
-                border: "none",
-                borderRadius: "4px",
-                background: "#007bff",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              Add Cafe
-            </button>
-          </div>
+          <AddCafeFormFields form={form} set={set} />
+          <DialogActions onClose={onClose} />
         </form>
       </div>
     </div>

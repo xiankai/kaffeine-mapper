@@ -109,6 +109,11 @@ jobs:
           node-version: "24"
           cache: "pnpm"
 
+      - name: Install system Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
@@ -122,18 +127,20 @@ jobs:
 
       - name: axe-core accessibility testing
         run: |
-          npx browser-driver-manager install chrome
           pnpm exec axe http://localhost:3000 --exit
 
       - name: Pa11y accessibility testing
+        env:
+          CHROMIUM_FLAGS: "--no-sandbox --disable-setuid-sandbox"
         run: |
-          pnpm exec pa11y http://localhost:3000 --standard WCAG2AA --threshold 0
+          pnpm exec pa11y http://localhost:3000 --standard WCAG2AA --threshold 0 \
+            --chromeLaunchConfig '{"args":["--no-sandbox","--disable-setuid-sandbox"]}'
 
       - name: Lighthouse accessibility audit
         run: |
           pnpm dlx lighthouse http://localhost:3000 \
             --only-categories=accessibility \
-            --chrome-flags="--headless" \
+            --chrome-flags="--headless --no-sandbox --disable-setuid-sandbox" \
             --output=json \
             --output-path=./lighthouse-a11y.json
           node scripts/check-a11y-score.js
@@ -246,11 +253,6 @@ jobs:
       - name: License compatibility check
         run: |
           pnpm exec license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense;Hippocratic-2.1' --excludePrivatePackages --production
-
-      - name: FOSSA license scan
-        uses: fossas/fossa-action@main
-        with:
-          api-key: ${{ secrets.FOSSA_API_KEY }}
 
       - name: License file validation
         run: |
