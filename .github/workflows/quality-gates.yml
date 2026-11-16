@@ -66,6 +66,8 @@ jobs:
       - name: Install Chrome
         id: chrome
         uses: https://github.com/browser-actions/setup-chrome@v1
+        with:
+          install-dependencies: true
 
       - name: Start application
         run: |
@@ -132,12 +134,14 @@ jobs:
   semgrep-gate:
     name: Semgrep Scan
     runs-on: ubuntu-latest
-    container: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Semgrep
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends pipx
+
       - name: Semgrep security scan
-        run: semgrep scan --config p/security-audit --config p/secrets --config p/owasp-top-ten --error
+        run: pipx run semgrep scan --config p/security-audit --config p/secrets --config p/owasp-top-ten --error
 
   # Hook 5: License Compliance Gate
   license-gate:
