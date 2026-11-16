@@ -1,3 +1,4 @@
+# stack-reviewer-ignore: husky 9 runs this through .husky/_ wrappers with sh, so no shebang or husky.sh bootstrap is needed
 pnpm run quality:all
 pnpm run build
 pnpm run analyze:bundle
