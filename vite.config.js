@@ -2,15 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 
-const isGitHubPages =
-  process.env.NODE_ENV === "production" &&
-  process.env.GITHUB_ACTIONS === "true";
+const basePath = process.env.BASE_PATH;
 
 export default defineConfig({
   plugins: [react()],
 
-  // Set the base path for GitHub Pages deployment
-  base: isGitHubPages ? "/kaffeine-mapper/" : "./",
+  base: basePath ?? "./",
 
   build: {
     outDir: "dist",
@@ -39,8 +36,7 @@ export default defineConfig({
     // Chunk splitting for better caching
     chunkSizeWarningLimit: 1600,
 
-    // Source maps for debugging (disabled in production)
-    sourcemap: !isGitHubPages,
+    sourcemap: !basePath,
   },
 
   define: {
@@ -51,11 +47,9 @@ export default defineConfig({
 
   server: {
     port: 3000,
-    open: true,
   },
 
   preview: {
     port: 4173,
-    open: true,
   },
 });

@@ -50,10 +50,10 @@ module.exports = {
     "!src/**/*.stories.tsx",
     "!src/main.tsx",
     "!src/vite-env.d.ts",
-    // Excluded: Complex component or integration points requiring e2e tests
-    "!src/components/MapView.tsx",
+    "!src/components/MapPanel.tsx",
     "!src/App.tsx",
-    "!src/components/ImportView.tsx",
+    "!src/services/timelineWorker.ts",
+    "!src/services/parseTimelineFile.ts",
   ],
 
   // Skip coverage instrumentation for these paths

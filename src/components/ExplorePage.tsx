@@ -1,0 +1,67 @@
+import { lazy, Suspense, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { DEFAULT_FILTERS, Filters, rankPlaces } from "../domain/filters";
+import { useStore } from "../state/store";
+import { FilterBar } from "./FilterBar";
+import { PlaceCard } from "./PlaceCard";
+
+const MapPanel = lazy(() => import("./MapPanel"));
+
+const PAGE_SIZE = 60;
+
+export function ExplorePage() {
+  const { dataset, scoreContext } = useStore();
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const ranked = useMemo(
+    () => rankPlaces(dataset.places, filters, scoreContext),
+    [dataset.places, filters, scoreContext],
+  );
+
+  if (dataset.places.length === 0) {
+    return (
+      <p className="empty">
+        No places yet.{" "}
+        <Link to="/import">Import your Timeline or saved lists</Link> to start.
+      </p>
+    );
+  }
+
+  return (
+    <div className="explore">
+      <FilterBar
+        filters={filters}
+        onChange={(f) => (setFilters(f), setShown(PAGE_SIZE))}
+        count={ranked.length}
+      />
+      <div className="explore-body">
+        <section className="results" aria-label="Ranked places">
+          {ranked.length === 0 && (
+            <p className="empty">Nothing matches these filters.</p>
+          )}
+          <ol className="cards">
+            {ranked.slice(0, shown).map((r) => (
+              <PlaceCard
+                key={r.place.id}
+                ranked={r}
+                chainCounts={scoreContext.chainCounts}
+              />
+            ))}
+          </ol>
+          {ranked.length > shown && (
+            <button
+              type="button"
+              className="more"
+              onClick={() => setShown(shown + PAGE_SIZE)}
+            >
+              Show more ({ranked.length - shown} left)
+            </button>
+          )}
+        </section>
+        <Suspense fallback={<div className="map-panel" />}>
+          <MapPanel ranked={ranked} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}

@@ -21,13 +21,15 @@ env:
 
 jobs:
   build:
+    # stack-reviewer-ignore: Pages deploys only from the GitHub mirror; Forgejo has no Pages target
+    if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 10
 
@@ -47,6 +49,7 @@ jobs:
         run: pnpm run build
         env:
           NODE_ENV: production
+          BASE_PATH: /kaffeine-mapper/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
@@ -54,7 +57,7 @@ jobs:
           path: ./dist
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.server_url == 'https://github.com' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
 

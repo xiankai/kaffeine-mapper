@@ -42,5 +42,14 @@ module.exports = {
     // TypeScript rules
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     "@typescript-eslint/no-explicit-any": "warn",
+    complexity: ["error", 12],
+    "max-depth": ["error", 4],
+    "max-lines-per-function": ["error", { max: 100, skipBlankLines: true, skipComments: true }],
   },
+  overrides: [
+    {
+      files: ["**/__tests__/**", "src/test/**"],
+      rules: { "max-lines-per-function": "off" },
+    },
+  ],
 };

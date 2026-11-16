@@ -1,7 +1,7 @@
 module.exports = {
   ci: {
     collect: {
-      url: ["http://localhost:3000/kaffeine-mapper/"],
+      url: ["http://127.0.0.1:3000/"],
       numberOfRuns: 3,
       settings: {
         chromeFlags:
@@ -9,21 +9,17 @@ module.exports = {
       },
     },
     assert: {
-      preset: "lighthouse:no-pwa",
       assertions: {
-        "categories:performance": ["error", { minScore: 0.5 }],
+        "categories:performance": ["error", { minScore: 0.8 }],
         "categories:accessibility": ["error", { minScore: 0.9 }],
-        "first-contentful-paint": ["warn", { maxNumericValue: 2500 }],
-        "cumulative-layout-shift": ["warn", { maxNumericValue: 0.1 }],
-        "unused-javascript": "off",
-        "render-blocking-resources": "warn",
-        "csp-xss": "off",
-        "errors-in-console": "off",
-        "tap-targets": "off",
+        "categories:best-practices": ["warn", { minScore: 0.9 }],
+        "largest-contentful-paint": ["error", { maxNumericValue: 2500 }],
+        "cumulative-layout-shift": ["error", { maxNumericValue: 0.1 }],
       },
     },
     upload: {
-      target: "temporary-public-storage",
+      target: "filesystem",
+      outputDir: ".lighthouseci",
     },
   },
 };

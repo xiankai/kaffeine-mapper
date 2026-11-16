@@ -1,14 +1,81 @@
-/* Global Styles */
+:root {
+  --bg: #faf7f3;
+  --surface: #ffffff;
+  --text: #2b2420;
+  --muted: #6f655d;
+  --border: #e6ddd4;
+  --accent: #6b4226;
+  --accent-soft: #f1e6dc;
+  --warn: #9a5b00;
+  --danger: #b3261e;
+  --ok: #2f8f5b;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1714;
+    --surface: #25201c;
+    --text: #efe7df;
+    --muted: #b3a79c;
+    --border: #3a332d;
+    --accent: #e0a878;
+    --accent-soft: #3a2c22;
+    --warn: #e8b04a;
+    --danger: #ff8a80;
+    --ok: #6fcf97;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1b1714;
+  --surface: #25201c;
+  --text: #efe7df;
+  --muted: #b3a79c;
+  --border: #3a332d;
+  --accent: #e0a878;
+  --accent-soft: #3a2c22;
+  --warn: #e8b04a;
+  --danger: #ff8a80;
+  --ok: #6fcf97;
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f8f9fa;
-}\n\ncode {\n  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',\n    monospace;\n}\n\n/* Custom map marker styles */\n.cafe-marker {\n  background: transparent;\n  border: none;\n  font-size: 24px;\n  text-shadow: 0 0 3px white;\n}\n\n/* Leaflet popup customization */\n.leaflet-popup-content {\n  margin: 8px 12px;\n}\n\n.leaflet-popup-content h3 {\n  margin-top: 0;\n}\n\n/* Loading states */\n.loading {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 2rem;\n  color: #666;\n}\n\n/* Utility classes */\n.text-center {\n  text-align: center;\n}\n\n.text-muted {\n  color: #666;\n}\n\n.mt-1 { margin-top: 0.25rem; }\n.mt-2 { margin-top: 0.5rem; }\n.mt-3 { margin-top: 1rem; }\n.mb-1 { margin-bottom: 0.25rem; }\n.mb-2 { margin-bottom: 0.5rem; }\n.mb-3 { margin-bottom: 1rem; }\n\n.p-1 { padding: 0.25rem; }\n.p-2 { padding: 0.5rem; }\n.p-3 { padding: 1rem; }\n\n.d-flex { display: flex; }\n.align-items-center { align-items: center; }\n.justify-content-center { justify-content: center; }\n.gap-1 { gap: 0.25rem; }\n.gap-2 { gap: 0.5rem; }\n.gap-3 { gap: 1rem; }
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

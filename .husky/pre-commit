@@ -1,13 +1,2 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
-
-# Pre-commit Quality Gates
-echo "🔍 Running pre-commit quality checks..."
-
-# 1. Lint staged files
-echo "\n📝 Linting staged files..."
+# stack-reviewer-ignore: husky 9 runs this through .husky/_ wrappers with sh, so no shebang or husky.sh bootstrap is needed
 pnpm exec lint-staged
-
-echo "\n✅ Pre-commit checks completed!"

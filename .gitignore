@@ -2,3 +2,5 @@ node_modules
 samples
 dist
 coverage/
+.playwright-mcp/
+.lighthouseci/
