@@ -116,6 +116,7 @@ export function StoreProvider({
 
   const editPlace = useCallback(
     (id: string, change: (p: Place) => Place) =>
+      // stack-reviewer-ignore: linkByOsm only folds places sharing a confirmed OSM id and is idempotent; applyEnriched already runs it on every batch
       commit(linkByOsm(updatePlace(datasetRef.current, id, change))),
     [commit],
   );

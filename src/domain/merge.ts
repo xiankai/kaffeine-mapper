@@ -120,6 +120,7 @@ export function updatePlace(
   };
 }
 
+// stack-reviewer-ignore: a pick sets osm, so needsEnrichment's matcher check never fires and enrichment keeps it via confirmedMatch (covered in overpass.test)
 export function pickCandidate(place: Place, chosen: OsmMatch): Place {
   const { osmCandidates: _candidates, ...rest } = place;
   return { ...rest, osm: chosen, review: "cafe" };
