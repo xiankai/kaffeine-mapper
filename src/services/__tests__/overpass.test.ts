@@ -2,8 +2,8 @@ import { place } from "../../test/fixtures";
 import {
   enrichPlaces,
   needsEnrichment,
+  MATCHER_VERSION,
   OVERPASS_URLS,
-  radiusFor,
   sleep,
 } from "../overpass";
 
@@ -18,20 +18,42 @@ beforeEach(() => wait.mockClear());
 
 describe("needsEnrichment", () => {
   it("selects unchecked and stale located places that are not rejected", () => {
+    const current = { osmMatcher: MATCHER_VERSION };
     expect(needsEnrichment(place(), now())).toBe(true);
     expect(
-      needsEnrichment(place({ osmCheckedAt: "2026-01-20T00:00:00Z" }), now()),
+      needsEnrichment(
+        place({ ...current, osmCheckedAt: "2026-01-20T00:00:00Z" }),
+        now(),
+      ),
     ).toBe(false);
     expect(
-      needsEnrichment(place({ osmCheckedAt: "2025-12-01T00:00:00Z" }), now()),
+      needsEnrichment(
+        place({ ...current, osmCheckedAt: "2025-12-01T00:00:00Z" }),
+        now(),
+      ),
     ).toBe(true);
     expect(needsEnrichment(place({ located: false }), now())).toBe(false);
     expect(needsEnrichment(place({ review: "not-cafe" }), now())).toBe(false);
   });
 
-  it("uses a wider radius for bookmarks", () => {
-    expect(radiusFor(place())).toBe(40);
-    expect(radiusFor(place({ sources: ["saved"] }))).toBe(80);
+  it("rechecks places left unmatched by an older matcher", () => {
+    const checkedAt = "2026-01-20T00:00:00Z";
+    expect(needsEnrichment(place({ osmCheckedAt: checkedAt }), now())).toBe(
+      true,
+    );
+    expect(
+      needsEnrichment(place({ osmCheckedAt: checkedAt, osmMatcher: 1 }), now()),
+    ).toBe(true);
+    expect(
+      needsEnrichment(
+        place({
+          osmCheckedAt: checkedAt,
+          osmMatcher: 1,
+          osm: { id: "node/1", distanceM: 1, tags: {} },
+        }),
+        now(),
+      ),
+    ).toBe(false);
   });
 });
 
@@ -68,6 +90,36 @@ describe("enrichPlaces", () => {
     expect(result[1]?.osm).toBeUndefined();
     expect(onBatch).toHaveBeenLastCalledWith([result[1]], 2, 2);
     expect(wait).toHaveBeenCalledWith(1000);
+  });
+
+  it("offers candidates in a tower and keeps a café the user confirmed", async () => {
+    const tower = [1, 2].map((id) => ({
+      type: "node",
+      id,
+      lat: 51.5004 + id * 0.00001,
+      lon: -0.12,
+      tags: { name: `Cafe ${id}` },
+    }));
+    const fetchImpl = jest.fn(async () => ok(tower));
+    const confirmed = { id: "node/2", distanceM: 9, tags: {} };
+    const [open, picked, gone] = await enrichPlaces(
+      [
+        place({ id: "open", osmCandidates: [confirmed] }),
+        place({ id: "picked", review: "cafe", osm: confirmed }),
+        place({
+          id: "gone",
+          review: "cafe",
+          osm: { id: "node/9", distanceM: 3, tags: {} },
+        }),
+      ],
+      { fetchImpl, wait, now },
+    );
+    expect(open?.osm).toBeUndefined();
+    expect(open?.osmCandidates?.map((c) => c.id)).toEqual(["node/1", "node/2"]);
+    expect(open?.osmMatcher).toBe(MATCHER_VERSION);
+    expect(picked?.osm).toMatchObject({ id: "node/2", name: "Cafe 2" });
+    expect(picked?.osmCandidates).toBeUndefined();
+    expect(gone?.osm?.id).toBe("node/9");
   });
 
   it("retries busy responses and network errors on the fallback mirror", async () => {

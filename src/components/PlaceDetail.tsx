@@ -7,7 +7,8 @@ import {
 } from "../domain/insights";
 import { WeekSchedule } from "../domain/openingHours";
 import { METRIC_LABELS, METRICS, Score, scorePlace } from "../domain/scoring";
-import { Place, Review } from "../domain/types";
+import { OsmMatch, Place, Review } from "../domain/types";
+import { pickCandidate, rejectCandidates } from "../domain/merge";
 import { useStore } from "../state/store";
 import { AttributeEditor } from "./AttributeEditor";
 import { scoreClass } from "./scoreClass";
@@ -110,6 +111,30 @@ function ReviewButtons({
           {label}
         </button>
       ))}
+    </section>
+  );
+}
+
+function CandidatePicker({
+  candidates,
+  onPick,
+  onReject,
+}: {
+  candidates: OsmMatch[];
+  onPick: (chosen: OsmMatch) => void;
+  onReject: () => void;
+}) {
+  return (
+    <section aria-label="Which café was it?" className="review">
+      <span>Several cafés are this close. Which one was it?</span>
+      {candidates.map((c) => (
+        <button key={c.id} type="button" onClick={() => onPick(c)}>
+          {c.name ?? "Unnamed café"} ({c.distanceM} m)
+        </button>
+      ))}
+      <button type="button" onClick={onReject}>
+        None of these
+      </button>
     </section>
   );
 }
@@ -238,10 +263,20 @@ export function PlaceDetail() {
         score={score}
         chain={isChain(place, scoreContext.chainCounts)}
       />
-      <ReviewButtons
-        review={place.review}
-        onChange={(review) => editPlace(place.id, (p) => ({ ...p, review }))}
-      />
+      {place.osmCandidates?.length ? (
+        <CandidatePicker
+          candidates={place.osmCandidates}
+          onPick={(chosen) =>
+            editPlace(place.id, (p) => pickCandidate(p, chosen))
+          }
+          onReject={() => editPlace(place.id, rejectCandidates)}
+        />
+      ) : (
+        <ReviewButtons
+          review={place.review}
+          onChange={(review) => editPlace(place.id, (p) => ({ ...p, review }))}
+        />
+      )}
       <div className="detail-grid">
         <section>
           <ScoreBreakdown

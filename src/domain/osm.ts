@@ -116,28 +116,86 @@ function keptTags(tags: Record<string, string>): Record<string, string> {
   );
 }
 
-export function matchNearest(
+export const CANDIDATE_LIMIT = 3;
+export const AMBIGUITY_MARGIN_M = 20;
+const CONFIDENT_NAME = 0.5;
+
+interface Ranked {
+  el: OsmElement;
+  distance: number;
+  similarity: number;
+  rank: number;
+}
+
+export interface CafeMatch {
+  match?: OsmMatch;
+  candidates?: OsmMatch[];
+}
+
+function rankWithin(
   point: Point,
   elements: OsmElement[],
   radiusM: number,
-  expectedName?: string,
-): OsmMatch | undefined {
-  let best: { el: OsmElement; distance: number; rank: number } | undefined;
+  expectedName: string | undefined,
+): Ranked[] {
+  const ranked: Ranked[] = [];
   for (const el of elements) {
     const p = elementPoint(el);
     if (!p) continue;
     const distance = distanceM(point, p);
     if (distance > radiusM) continue;
-    const rank =
-      distance / radiusM - nameSimilarity(expectedName, el.tags?.name);
-    if (!best || rank < best.rank) best = { el, distance, rank };
+    const similarity = nameSimilarity(expectedName, el.tags?.name);
+    ranked.push({
+      el,
+      distance,
+      similarity,
+      rank: distance / radiusM - similarity,
+    });
   }
-  if (!best) return undefined;
-  const tags = keptTags(best.el.tags ?? {});
+  return ranked.sort((a, b) => a.rank - b.rank);
+}
+
+export function toOsmMatch(el: OsmElement, distance: number): OsmMatch {
+  const tags = keptTags(el.tags ?? {});
   return {
-    id: `${best.el.type}/${best.el.id}`,
+    id: `${el.type}/${el.id}`,
     ...(tags.name && { name: tags.name }),
-    distanceM: Math.round(best.distance),
+    distanceM: Math.round(distance),
     tags,
   };
+}
+
+function isClearWinner(best: Ranked, runnerUp: Ranked): boolean {
+  const namedWinner =
+    best.similarity >= CONFIDENT_NAME && best.similarity > runnerUp.similarity;
+  return namedWinner || runnerUp.distance - best.distance >= AMBIGUITY_MARGIN_M;
+}
+
+export function matchCafe(
+  point: Point,
+  elements: OsmElement[],
+  radiusM: number,
+  expectedName?: string,
+): CafeMatch {
+  const ranked = rankWithin(point, elements, radiusM, expectedName);
+  const [best, runnerUp] = ranked;
+  if (!best) return {};
+  if (!runnerUp || isClearWinner(best, runnerUp)) {
+    return { match: toOsmMatch(best.el, best.distance) };
+  }
+  return {
+    candidates: ranked
+      .slice(0, CANDIDATE_LIMIT)
+      .map((r) => toOsmMatch(r.el, r.distance)),
+  };
+}
+
+export function refreshMatch(
+  point: Point,
+  elements: OsmElement[],
+  id: string,
+): OsmMatch | undefined {
+  const el = elements.find((e) => `${e.type}/${e.id}` === id);
+  const p = el && elementPoint(el);
+  return el && p ? toOsmMatch(el, distanceM(point, p)) : undefined;
 }

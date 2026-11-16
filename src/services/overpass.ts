@@ -1,9 +1,11 @@
 import {
   buildOverpassQuery,
+  CafeMatch,
   cellBBox,
   cellKey,
-  matchNearest,
+  matchCafe,
   OsmElement,
+  refreshMatch,
 } from "../domain/osm";
 import { displayName } from "../domain/insights";
 import { Place } from "../domain/types";
@@ -13,6 +15,8 @@ export const OVERPASS_URLS = [
   "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ];
 export const STALE_AFTER_DAYS = 30;
+export const MATCH_RADIUS_M = 80;
+export const MATCHER_VERSION = 2;
 const MAX_ATTEMPTS = 6;
 let lastGoodEndpoint = 0;
 
@@ -31,12 +35,9 @@ export const sleep = (ms: number) =>
 export function needsEnrichment(place: Place, now: Date): boolean {
   if (!place.located || place.review === "not-cafe") return false;
   if (!place.osmCheckedAt) return true;
+  if (!place.osm && place.osmMatcher !== MATCHER_VERSION) return true;
   const ageDays = (now.getTime() - Date.parse(place.osmCheckedAt)) / 86400000;
   return ageDays > STALE_AFTER_DAYS;
-}
-
-export function radiusFor(place: Place): number {
-  return place.sources.includes("timeline") ? 40 : 80;
 }
 
 async function fetchElements(
@@ -90,20 +91,36 @@ function byCell(places: Place[]): Map<string, Place[]> {
   return cells;
 }
 
+function confirmedMatch(place: Place, elements: OsmElement[]): CafeMatch {
+  if (place.review !== "cafe" || !place.osm) return {};
+  return { match: refreshMatch(place, elements, place.osm.id) ?? place.osm };
+}
+
+function findMatch(place: Place, elements: OsmElement[]): CafeMatch {
+  const confirmed = confirmedMatch(place, elements);
+  if (confirmed.match) return confirmed;
+  return matchCafe(
+    place,
+    elements,
+    MATCH_RADIUS_M,
+    place.name ? displayName(place) : undefined,
+  );
+}
+
 function withMatch(
   place: Place,
   elements: OsmElement[],
   checkedAt: string,
 ): Place {
-  const radius = radiusFor(place);
-  const match = matchNearest(
-    place,
-    elements,
-    radius,
-    place.name ? displayName(place) : undefined,
-  );
-  const { osm: _previous, ...rest } = place;
-  return { ...rest, ...(match && { osm: match }), osmCheckedAt: checkedAt };
+  const { match, candidates } = findMatch(place, elements);
+  const { osm: _osm, osmCandidates: _candidates, ...rest } = place;
+  return {
+    ...rest,
+    ...(match && { osm: match }),
+    ...(candidates && { osmCandidates: candidates }),
+    osmCheckedAt: checkedAt,
+    osmMatcher: MATCHER_VERSION,
+  };
 }
 
 export async function enrichPlaces(

@@ -2,8 +2,15 @@ import { normaliseName } from "./osm";
 import { parseOpeningHours, WeekSchedule } from "./openingHours";
 import { DayPart, Place, Slot } from "./types";
 
+function candidateNames(place: Place): string | undefined {
+  const names = (place.osmCandidates ?? []).flatMap((c) => c.name ?? []);
+  return names.length ? `${names.join(" or ")}?` : undefined;
+}
+
 export function displayName(place: Place): string {
-  return place.name ?? place.osm?.name ?? "Unnamed place";
+  return (
+    place.name ?? place.osm?.name ?? candidateNames(place) ?? "Unnamed place"
+  );
 }
 
 export function scheduleOf(place: Place): WeekSchedule | undefined {
@@ -93,5 +100,5 @@ export function isBookmarked(place: Place): boolean {
 
 export function isLikelyCafe(place: Place): boolean {
   if (place.review !== "pending") return place.review === "cafe";
-  return place.osm !== undefined;
+  return place.osm !== undefined || (place.osmCandidates?.length ?? 0) > 0;
 }

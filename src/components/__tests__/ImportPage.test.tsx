@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { place, takeoutZip } from "../../test/fixtures";
 import { renderWithStore } from "../../test/render";
 import { geocodeUnlocated } from "../../services/geocode";
-import { enrichPlaces } from "../../services/overpass";
+import { enrichPlaces, MATCHER_VERSION } from "../../services/overpass";
 import { parseTimelineFile } from "../../services/parseTimelineFile";
 import { ImportPage } from "../ImportPage";
 
@@ -98,7 +98,13 @@ describe("ImportPage", () => {
     (enrichPlaces as jest.Mock).mockImplementation(
       async (places, { onBatch }) => {
         onBatch(
-          [{ ...places[0], osmCheckedAt: new Date().toISOString() }],
+          [
+            {
+              ...places[0],
+              osmCheckedAt: new Date().toISOString(),
+              osmMatcher: MATCHER_VERSION,
+            },
+          ],
           1,
           2,
         );
@@ -145,7 +151,12 @@ describe("ImportPage", () => {
     URL.createObjectURL = jest.fn(() => "blob:x");
     URL.revokeObjectURL = jest.fn();
     renderWithStore(<ImportPage />, {
-      places: [place({ osmCheckedAt: new Date().toISOString() })],
+      places: [
+        place({
+          osmCheckedAt: new Date().toISOString(),
+          osmMatcher: MATCHER_VERSION,
+        }),
+      ],
     });
     expect(
       screen.getByRole("button", { name: "Everything is up to date" }),

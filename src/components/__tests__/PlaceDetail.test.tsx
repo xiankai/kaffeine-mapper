@@ -111,6 +111,49 @@ describe("PlaceDetail", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("lets the user pick which nearby café it was", () => {
+    const tower = place({
+      id: "g:tower",
+      osmCandidates: [
+        { ...osm({ name: "Tully's" }, "node/1"), distanceM: 43 },
+        { ...osm({ name: "Starbucks" }, "node/2"), distanceM: 48 },
+      ],
+    });
+    show([tower], "g:tower");
+    expect(
+      screen.getByRole("heading", { name: "Tully's or Starbucks?" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Starbucks (48 m)" }));
+    expect(
+      screen.getByRole("heading", { name: "Starbucks" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Café ✓" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("names an unnamed candidate generically", () => {
+    show(
+      [place({ id: "g:office", osmCandidates: [osm({}, "node/3")] })],
+      "g:office",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Unnamed café (5 m)" }));
+    expect(screen.getByRole("button", { name: "Café ✓" })).toBeInTheDocument();
+  });
+
+  it("marks a place with no right candidate as not a café", () => {
+    show(
+      [place({ id: "g:office", osmCandidates: [osm({}, "node/3")] })],
+      "g:office",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "None of these" }));
+    expect(screen.getByRole("button", { name: "Not a café" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("reports a missing place", () => {
     show([], "nope");
     expect(screen.getByText(/Place not found/)).toBeInTheDocument();

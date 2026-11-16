@@ -1,4 +1,4 @@
-import { Dataset, Place, Visit } from "./types";
+import { Dataset, OsmMatch, Place, Visit } from "./types";
 
 const union = <T>(a: T[], b: T[]): T[] => [...new Set([...a, ...b])];
 
@@ -118,4 +118,14 @@ export function updatePlace(
     ...dataset,
     places: dataset.places.map((p) => (p.id === id ? change(p) : p)),
   };
+}
+
+export function pickCandidate(place: Place, chosen: OsmMatch): Place {
+  const { osmCandidates: _candidates, ...rest } = place;
+  return { ...rest, osm: chosen, review: "cafe" };
+}
+
+export function rejectCandidates(place: Place): Place {
+  const { osmCandidates: _candidates, ...rest } = place;
+  return { ...rest, review: "not-cafe" };
 }

@@ -116,7 +116,7 @@ export function StoreProvider({
 
   const editPlace = useCallback(
     (id: string, change: (p: Place) => Place) =>
-      commit(updatePlace(datasetRef.current, id, change)),
+      commit(linkByOsm(updatePlace(datasetRef.current, id, change))),
     [commit],
   );
 
