@@ -7,7 +7,7 @@
 | Security     | any advisory in a runtime dependency, or a high/critical advisory in any dependency             | `pnpm run security:audit`                            | security-gate     |
 | Licenses     | a production dependency outside the allowlist in `scripts/check-licenses.js`                    | `pnpm run license:check`                             | license-gate      |
 | Bundle size  | the built bundle exceeds the limits in `scripts/check-bundle-size.js`                           | `pnpm run build && pnpm run analyze:bundle`          | performance-gate  |
-| Lighthouse   | performance < 0.5 or accessibility < 0.9 (`.lighthouserc.cjs`)                                  | `pnpm run perf:audit`                                | performance-gate  |
+| Lighthouse   | performance < 0.8, accessibility < 0.9, LCP > 2.5 s or CLS > 0.1 (`.lighthouserc.cjs`)          | `pnpm run perf:audit`                                | performance-gate  |
 
 ## Hooks
 

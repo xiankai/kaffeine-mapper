@@ -72,7 +72,7 @@ jobs:
       - name: Start application
         run: |
           pnpm start &
-          pnpm dlx wait-on http://localhost:3000 --timeout 60000
+          pnpm dlx wait-on http-get://127.0.0.1:3000 --timeout 60000
 
       - name: Lighthouse CI performance audit
         run: pnpm dlx @lhci/cli@0.15.x autorun
