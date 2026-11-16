@@ -1,5 +1,10 @@
 import { osm, place, visit } from "../../test/fixtures";
-import { DEFAULT_FILTERS, Filters, rankPlaces } from "../filters";
+import {
+  confidentScore,
+  DEFAULT_FILTERS,
+  Filters,
+  rankPlaces,
+} from "../filters";
 import { DEFAULT_PREFERENCES } from "../scoring";
 
 const ctx = {
@@ -42,6 +47,18 @@ const both = place({
 const pending = place({ id: "pending", name: "Delta" });
 const hidden = place({ id: "hidden", located: false, review: "cafe" });
 const all = [cafe, saved, both, pending, hidden];
+
+describe("confidentScore", () => {
+  it("pulls sparsely known scores toward neutral", () => {
+    expect(
+      confidentScore({ value: 99, coverage: 0.25, metrics: {} }),
+    ).toBeCloseTo(62.25);
+    expect(
+      confidentScore({ value: 80, coverage: 0.9, metrics: {} }),
+    ).toBeCloseTo(77);
+    expect(confidentScore({ coverage: 0, metrics: {} })).toBe(-1);
+  });
+});
 
 describe("rankPlaces", () => {
   it("filters by status", () => {

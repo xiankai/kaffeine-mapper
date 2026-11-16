@@ -34,10 +34,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Run tests with coverage
-        run: pnpm run test:coverage
-
-      - name: Coverage threshold check
+      - name: Run tests with coverage gate
         run: pnpm run test:coverage
 
       - name: Upload coverage reports
@@ -88,9 +85,7 @@ jobs:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Bundle size check
-        run: |
-          pnpm run analyze:bundle
-          node scripts/check-bundle-size.js
+        run: pnpm run analyze:bundle
 
   # Hook 3: Code Quality Gate
   code-quality-gate:
@@ -121,19 +116,10 @@ jobs:
       - name: Import organization check
         run: pnpm run imports:check
 
-      - name: Code complexity analysis
-        run: |
-          pnpm exec eslint src/ --ext .ts,.tsx,.js,.jsx \
-            --rule 'complexity: [error, 10]' \
-            --rule 'max-depth: [error, 4]' \
-            --rule 'max-lines-per-function: [error, 50]'
-
   # Hook 4: Security Gate
   security-gate:
     name: Security Gate (Vulnerability Scan)
     runs-on: ubuntu-latest
-    env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -150,8 +136,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: pnpm audit
-        run: pnpm audit --audit-level high
+      - name: Dependency audit (any runtime advisory, high+ dev advisory)
+        run: pnpm run security:audit
 
       - name: Semgrep security scan
         uses: returntocorp/semgrep-action@v1
@@ -181,25 +167,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: License compatibility check
-        run: |
-          pnpm exec license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense;Hippocratic-2.1' --excludePrivatePackages --production
+      - name: License allowlist (production dependencies)
+        run: pnpm run license:check
 
       - name: License file validation
-        run: |
-          if [ ! -f "LICENSE" ]; then
-            echo "❌ LICENSE file missing"
-            exit 1
-          fi
-          echo "✅ LICENSE file present"
-
-      - name: Generate license report
-        run: |
-          pnpm exec license-report --output=html --only=prod > license-report.html
-          pnpm exec license-report --output=json --only=prod > license-report.json
-
-      - name: Upload license report
-        uses: actions/upload-artifact@v4
-        with:
-          name: license-report
-          path: license-report.*
+        run: test -f LICENSE

@@ -1,8 +1,7 @@
 import { TimelineResult } from "../domain/timeline";
 
 type WorkerReply =
-  | { ok: true; result: TimelineResult }
-  | { ok: false; error: string };
+  { ok: true; result: TimelineResult } | { ok: false; error: string };
 
 export function parseTimelineFile(file: File): Promise<TimelineResult> {
   const worker = new Worker(new URL("./timelineWorker.ts", import.meta.url), {

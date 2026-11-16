@@ -1,8 +1,8 @@
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useRef, useState } from "react";
 import { parseSavedCsv, parseStarredGeoJson } from "../domain/bookmarks";
 import { MergeSummary } from "../domain/merge";
 import { parseTakeoutZip } from "../domain/takeoutZip";
-import { Place } from "../domain/types";
+import { Dataset, Place } from "../domain/types";
 import { centroid, geocodeUnlocated } from "../services/geocode";
 import { enrichPlaces, needsEnrichment } from "../services/overpass";
 import { parseTimelineFile } from "../services/parseTimelineFile";
@@ -36,24 +36,26 @@ function download(name: string, content: string) {
   const url = URL.createObjectURL(
     new Blob([content], { type: "application/json" }),
   );
-  const a = Object.assign(document.createElement("a"), {
+  Object.assign(document.createElement("a"), {
     href: url,
     download: name,
-  });
-  a.click();
+  }).click();
   URL.revokeObjectURL(url);
 }
 
-export function ImportPage() {
-  const { dataset, importPlaces, applyEnriched, replaceDataset } = useStore();
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
-  const abort = useRef<AbortController>();
-  const busy = status.kind === "busy";
-  const stale = dataset.places.filter((p) => needsEnrichment(p, new Date()));
-  const unlocated = dataset.places.filter((p) => !p.located && p.name);
+function onFiles(handle: (files: File[]) => void) {
+  return (e: ChangeEvent<HTMLInputElement>) => {
+    const files = [...(e.target.files ?? [])];
+    e.target.value = "";
+    if (files.length) handle(files);
+  };
+}
 
+function useTask() {
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const progress = (text: string) => setStatus({ kind: "busy", text });
   const run = async (text: string, task: () => Promise<string>) => {
-    setStatus({ kind: "busy", text });
+    progress(text);
     try {
       setStatus({ kind: "done", text: await task() });
     } catch (error) {
@@ -63,45 +65,118 @@ export function ImportPage() {
       });
     }
   };
+  return { status, busy: status.kind === "busy", progress, run };
+}
 
-  const onTimeline = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    run(`Reading ${file.name}…`, async () => {
-      const result = await parseTimelineFile(file);
-      const summary = importPlaces(result.places);
-      return `${describe(summary, "Timeline")} (${result.visitCount} visits scanned, ${result.places.length} candidate places)`;
+function Step({
+  title,
+  intro,
+  children,
+}: {
+  title: string;
+  intro: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="step">
+      <h2>{title}</h2>
+      <p>{intro}</p>
+      {children}
+    </section>
+  );
+}
+
+function FilePicker({
+  label,
+  accept,
+  multiple = false,
+  disabled,
+  onPick,
+}: {
+  label: string;
+  accept: string;
+  multiple?: boolean;
+  disabled: boolean;
+  onPick: (files: File[]) => void;
+}) {
+  return (
+    <label className="file">
+      {label}
+      <input
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        onChange={onFiles(onPick)}
+        disabled={disabled}
+      />
+    </label>
+  );
+}
+
+function BackupStep({
+  dataset,
+  busy,
+  onRestore,
+}: {
+  dataset: Dataset;
+  busy: boolean;
+  onRestore: (files: File[]) => void;
+}) {
+  return (
+    <Step
+      title="Backup"
+      intro={`${dataset.places.length} places stored. Export includes your notes and ratings.`}
+    >
+      <button
+        type="button"
+        onClick={() =>
+          download("kaffeine-mapper.json", JSON.stringify(dataset))
+        }
+        disabled={!dataset.places.length}
+      >
+        Export backup
+      </button>
+      <FilePicker
+        label="Restore backup"
+        accept=".json,application/json"
+        disabled={busy}
+        onPick={onRestore}
+      />
+    </Step>
+  );
+}
+
+function useImportActions() {
+  const { dataset, importPlaces, applyEnriched, replaceDataset } = useStore();
+  const { status, busy, progress, run } = useTask();
+  const abort = useRef<AbortController>();
+  const stale = dataset.places.filter((p) => needsEnrichment(p, new Date()));
+  const unlocated = dataset.places.filter((p) => !p.located && p.name);
+
+  const importTimeline = ([file]: File[]) =>
+    run(`Reading ${file!.name}…`, async () => {
+      const result = await parseTimelineFile(file!);
+      return `${describe(importPlaces(result.places), "Timeline")} (${result.visitCount} visits scanned, ${result.places.length} candidate places)`;
     });
-  };
 
-  const onBookmarks = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = [...(e.target.files ?? [])];
-    e.target.value = "";
-    if (!files.length) return;
+  const importBookmarks = (files: File[]) =>
     run(`Reading ${files.length} list(s)…`, async () => {
       const places = (await Promise.all(files.map(parseBookmarkFile))).flat();
       return describe(importPlaces(places), `${files.length} saved list(s)`);
     });
-  };
 
-  const onEnrich = () => {
+  const enrich = () => {
     abort.current = new AbortController();
     const { signal } = abort.current;
     let done = 0;
     run(`Matching ${stale.length} places against OpenStreetMap…`, async () => {
+      const onBatch = (enriched: Place[], finished: number, total: number) => {
+        done = finished;
+        applyEnriched(enriched);
+        progress(`Matched ${finished} of ${total} places…`);
+      };
       try {
-        await enrichPlaces(stale, {
-          signal,
-          onBatch: (enriched, finished, total) => {
-            done = finished;
-            applyEnriched(enriched);
-            setStatus({
-              kind: "busy",
-              text: `Matched ${finished} of ${total} places…`,
-            });
-          },
-        });
+        await enrichPlaces(stale, { signal, onBatch });
       } catch (error) {
         if (signal.aborted)
           return `Stopped after ${done} places; progress is saved.`;
@@ -111,29 +186,52 @@ export function ImportPage() {
     });
   };
 
-  const onLocate = () =>
+  const locate = () =>
     run(`Locating ${unlocated.length} saved places by name…`, async () => {
+      const near = centroid(dataset.places);
       const located = await geocodeUnlocated(unlocated, {
-        ...(centroid(dataset.places) && {
-          near: centroid(dataset.places) as { lat: number; lng: number },
-        }),
-        onProgress: (done, total) =>
-          setStatus({ kind: "busy", text: `Located ${done} of ${total}…` }),
+        ...(near && { near }),
+        onProgress: (done, total) => progress(`Located ${done} of ${total}…`),
       });
       applyEnriched(located);
       return `Located ${located.filter((p) => p.located).length} of ${unlocated.length} saved places. Review them before trusting the match.`;
     });
 
-  const onRestore = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const restore = ([file]: File[]) =>
     run("Restoring backup…", async () => {
-      replaceDataset(parseDatasetFile(JSON.parse(await file.text())));
+      replaceDataset(parseDatasetFile(JSON.parse(await file!.text())));
       return "Backup restored.";
     });
-  };
 
+  return {
+    dataset,
+    status,
+    busy,
+    abort,
+    stale,
+    unlocated,
+    importTimeline,
+    importBookmarks,
+    enrich,
+    locate,
+    restore,
+  };
+}
+
+export function ImportPage() {
+  const {
+    dataset,
+    status,
+    busy,
+    abort,
+    stale,
+    unlocated,
+    importTimeline,
+    importBookmarks,
+    enrich,
+    locate,
+    restore,
+  } = useImportActions();
   return (
     <div className="import">
       <h1>Import</h1>
@@ -141,58 +239,42 @@ export function ImportPage() {
         Everything stays in this browser. Only coordinates and place names go to
         OpenStreetMap for matching.
       </p>
-
       <GetDataGuide />
-
-      <section className="step">
-        <h2>1. Places you&apos;ve been</h2>
-        <p>
-          Pick the Timeline JSON from your phone. Re-importing a newer export
-          only adds new visits.
-        </p>
-        <label className="file">
-          Timeline JSON
-          <input
-            type="file"
-            accept=".json,application/json"
-            onChange={onTimeline}
-            disabled={busy}
-          />
-        </label>
-      </section>
-
-      <section className="step">
-        <h2>2. Places you want to try</h2>
-        <p>
-          Pick the Takeout .zip as it arrived, or individual list CSVs / GeoJSON
-          files. Each list keeps its name.
-        </p>
-        <label className="file">
-          Takeout zip or saved lists
-          <input
-            type="file"
-            accept=".zip,.csv,.json,.geojson,application/zip,text/csv,application/json"
-            multiple
-            onChange={onBookmarks}
-            disabled={busy}
-          />
-        </label>
+      <Step
+        title="1. Places you've been"
+        intro="Pick the Timeline JSON from your phone. Re-importing a newer export only adds new visits."
+      >
+        <FilePicker
+          label="Timeline JSON"
+          accept=".json,application/json"
+          disabled={busy}
+          onPick={importTimeline}
+        />
+      </Step>
+      <Step
+        title="2. Places you want to try"
+        intro="Pick the Takeout .zip as it arrived, or individual list CSVs / GeoJSON files. Each list keeps its name."
+      >
+        <FilePicker
+          label="Takeout zip or saved lists"
+          accept=".zip,.csv,.json,.geojson,application/zip,text/csv,application/json"
+          multiple
+          disabled={busy}
+          onPick={importBookmarks}
+        />
         {unlocated.length > 0 && (
-          <button type="button" onClick={onLocate} disabled={busy}>
+          <button type="button" onClick={locate} disabled={busy}>
             Locate {unlocated.length} saved places by name
           </button>
         )}
-      </section>
-
-      <section className="step">
-        <h2>3. Enrich from OpenStreetMap</h2>
-        <p>
-          Finds which places are cafés and pulls opening hours, brand (chain),
-          wi-fi and power tags. Data older than 30 days is refreshed.
-        </p>
+      </Step>
+      <Step
+        title="3. Enrich from OpenStreetMap"
+        intro="Finds which places are cafés and pulls opening hours, brand (chain), wi-fi and power tags. Data older than 30 days is refreshed."
+      >
         <button
           type="button"
-          onClick={onEnrich}
+          onClick={enrich}
           disabled={busy || stale.length === 0}
         >
           {stale.length
@@ -204,34 +286,8 @@ export function ImportPage() {
             Stop
           </button>
         )}
-      </section>
-
-      <section className="step">
-        <h2>Backup</h2>
-        <p>
-          {dataset.places.length} places stored. Export includes your notes and
-          ratings.
-        </p>
-        <button
-          type="button"
-          onClick={() =>
-            download("kaffeine-mapper.json", JSON.stringify(dataset))
-          }
-          disabled={!dataset.places.length}
-        >
-          Export backup
-        </button>
-        <label className="file">
-          Restore backup
-          <input
-            type="file"
-            accept=".json,application/json"
-            onChange={onRestore}
-            disabled={busy}
-          />
-        </label>
-      </section>
-
+      </Step>
+      <BackupStep dataset={dataset} busy={busy} onRestore={restore} />
       {status.kind !== "idle" && (
         <p role="status" className={`status ${status.kind}`}>
           {status.text}

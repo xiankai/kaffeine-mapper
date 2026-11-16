@@ -1,40 +1,24 @@
 import { Place, PlaceSource } from "./types";
 
+const CSV_FIELD = /("(?:[^"]|"")*"|[^,\r\n]*)(,|\r\n|\n|\r|$)/g;
+
+function unquote(field: string): string {
+  return field.startsWith('"') ? field.slice(1, -1).replace(/""/g, '"') : field;
+}
+
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
-  let field = "";
-  let quoted = false;
-  const input = text.replace(/^\uFEFF/, "");
-  for (let i = 0; i < input.length; i++) {
-    const ch = input[i];
-    if (quoted) {
-      if (ch === '"' && input[i + 1] === '"') {
-        field += '"';
-        i++;
-      } else if (ch === '"') {
-        quoted = false;
-      } else {
-        field += ch;
-      }
-    } else if (ch === '"') {
-      quoted = true;
-    } else if (ch === ",") {
-      row.push(field);
-      field = "";
-    } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && input[i + 1] === "\n") i++;
-      row.push(field);
-      rows.push(row);
-      row = [];
-      field = "";
-    } else {
-      field += ch;
-    }
-  }
-  if (field !== "" || row.length > 0) {
-    row.push(field);
+  for (const [, field = "", separator] of text
+    .replace(/^\uFEFF/, "")
+    .matchAll(CSV_FIELD)) {
+    const atEnd = separator === "";
+    if (atEnd && field === "" && row.length === 0) break;
+    row.push(unquote(field));
+    if (separator === ",") continue;
     rows.push(row);
+    row = [];
+    if (atEnd) break;
   }
   return rows;
 }
@@ -161,33 +145,39 @@ export function parseStarredGeoJson(
   const features = (json as { features?: unknown })?.features;
   if (!Array.isArray(features))
     throw new Error("Starred places file is not GeoJSON (no features array).");
-  return features.flatMap((raw: StarredFeature) => {
-    const props = raw.properties ?? raw;
-    const location = starredLocation(props);
-    const url = str(props.google_maps_url);
-    const coords = featureCoords(raw);
-    const name = str(location.name) ?? (url ? nameFromMapsUrl(url) : undefined);
-    if (!url && !name && !coords) return [];
-    const place = bookmarkPlace({
-      key: url ?? `${listName}:${name ?? `${coords?.lat},${coords?.lng}`}`,
-      name,
-      url,
-      list: listName,
-      source: "starred",
-      coords,
-    });
-    const address = str(location.address);
-    const rating =
-      props.five_star_rating_published ?? props.five_star_rating_draft;
-    const review =
-      str(props.review_text_published) ?? str(props.review_text_draft);
-    return [
-      {
-        ...place,
-        ...(address && { address }),
-        ...(typeof rating === "number" && { googleRating: rating }),
-        ...(review && { googleNote: review }),
-      },
-    ];
+  return features.flatMap((raw: StarredFeature) => starredPlace(raw, listName));
+}
+
+function starredDetails(
+  props: Record<string, unknown>,
+  location: Record<string, unknown>,
+): Partial<Place> {
+  const address = str(location.address);
+  const rating =
+    props.five_star_rating_published ?? props.five_star_rating_draft;
+  const review =
+    str(props.review_text_published) ?? str(props.review_text_draft);
+  return {
+    ...(address && { address }),
+    ...(typeof rating === "number" && { googleRating: rating }),
+    ...(review && { googleNote: review }),
+  };
+}
+
+function starredPlace(raw: StarredFeature, listName: string): Place[] {
+  const props = raw.properties ?? raw;
+  const location = starredLocation(props);
+  const url = str(props.google_maps_url);
+  const coords = featureCoords(raw);
+  const name = str(location.name) ?? (url ? nameFromMapsUrl(url) : undefined);
+  if (!url && !name && !coords) return [];
+  const place = bookmarkPlace({
+    key: url ?? `${listName}:${name ?? `${coords?.lat},${coords?.lng}`}`,
+    name,
+    url,
+    list: listName,
+    source: "starred",
+    coords,
   });
+  return [{ ...place, ...starredDetails(props, location) }];
 }

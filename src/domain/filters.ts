@@ -91,10 +91,15 @@ function matchesQuery(place: Place, query: string): boolean {
   );
 }
 
+const NEUTRAL_SCORE = 50;
+
+export function confidentScore({ value, coverage }: Score): number {
+  if (value === undefined) return -1;
+  return value * coverage + NEUTRAL_SCORE * (1 - coverage);
+}
+
 const SORTERS: Record<SortKey, (a: RankedPlace, b: RankedPlace) => number> = {
-  score: (a, b) =>
-    (b.score.value ?? -1) - (a.score.value ?? -1) ||
-    b.score.coverage - a.score.coverage,
+  score: (a, b) => confidentScore(b.score) - confidentScore(a.score),
   visits: (a, b) => b.place.visits.length - a.place.visits.length,
   name: (a, b) => displayName(a.place).localeCompare(displayName(b.place)),
   recent: (a, b) =>
