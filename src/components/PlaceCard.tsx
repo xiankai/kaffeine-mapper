@@ -32,8 +32,12 @@ export function PlaceCard({ ranked: { place, score }, chainCounts }: Props) {
               </span>
             ))}
             {chain && <span className="tag muted">chain</span>}
-            {place.review === "pending" && (
-              <span className="tag warn">unreviewed</span>
+            {place.osmCandidates?.length ? (
+              <span className="tag warn">pick café</span>
+            ) : (
+              place.review === "pending" && (
+                <span className="tag warn">unreviewed</span>
+              )
             )}
           </span>
           <span className="meta">

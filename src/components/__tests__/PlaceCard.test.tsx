@@ -52,6 +52,23 @@ describe("PlaceCard", () => {
       </MemoryRouter>,
     );
     expect(screen.getByText("?")).toHaveClass("score-unknown");
+    expect(screen.queryByText("unreviewed")).not.toBeInTheDocument();
+  });
+
+  it("asks for a pick when several cafés are candidates", () => {
+    render(
+      <MemoryRouter>
+        <PlaceCard
+          ranked={{
+            place: place({ osmCandidates: [osm({ name: "A" })] }),
+            score: { coverage: 0, metrics: {} },
+          }}
+          chainCounts={new Map()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("pick café")).toBeInTheDocument();
+    expect(screen.queryByText("unreviewed")).not.toBeInTheDocument();
   });
 
   it("bands scores", () => {

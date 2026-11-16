@@ -18,6 +18,16 @@ describe("insights", () => {
       displayName(place({ name: "Mine", osm: osm({ name: "OSM" }) })),
     ).toBe("Mine");
     expect(displayName(place({ osm: osm({ name: "OSM" }) }))).toBe("OSM");
+    expect(
+      displayName(
+        place({
+          osmCandidates: [osm({ name: "A" }), osm({}), osm({ name: "B" })],
+        }),
+      ),
+    ).toBe("A or B?");
+    expect(displayName(place({ osmCandidates: [osm({})] }))).toBe(
+      "Unnamed place",
+    );
     expect(displayName(place())).toBe("Unnamed place");
   });
 
@@ -90,6 +100,8 @@ describe("insights", () => {
     expect(isBookmarked(place({ lists: ["L"] }))).toBe(true);
     expect(isLikelyCafe(place({ osm: osm() }))).toBe(true);
     expect(isLikelyCafe(place())).toBe(false);
+    expect(isLikelyCafe(place({ osmCandidates: [osm()] }))).toBe(true);
+    expect(isLikelyCafe(place({ osmCandidates: [] }))).toBe(false);
     expect(isLikelyCafe(place({ review: "cafe" }))).toBe(true);
     expect(isLikelyCafe(place({ review: "not-cafe", osm: osm() }))).toBe(false);
   });

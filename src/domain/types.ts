@@ -57,7 +57,9 @@ export interface Place {
   url?: string;
   visits: Visit[];
   osm?: OsmMatch;
+  osmCandidates?: OsmMatch[];
   osmCheckedAt?: string;
+  osmMatcher?: number;
   review: Review;
   manual: ManualAttributes;
   googleRating?: number;
