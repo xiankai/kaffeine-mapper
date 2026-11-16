@@ -37,19 +37,6 @@ jobs:
       - name: Run tests with coverage gate
         run: pnpm run test:coverage
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-
-      - name: Coverage comment
-        if: github.event_name == 'pull_request'
-        uses: 5monkeys/cobertura-action@master
-        with:
-          path: coverage/cobertura-coverage.xml
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          minimum_coverage: 95
-
   # Hook 2: Frontend Performance Gate
   performance-gate:
     name: Performance Gate (LCP<2.5s, CLS<0.1)
@@ -73,19 +60,22 @@ jobs:
       - name: Build application
         run: pnpm run build
 
+      - name: Bundle size check
+        run: pnpm run analyze:bundle
+
+      - name: Install Chrome
+        id: chrome
+        uses: https://github.com/browser-actions/setup-chrome@v1
+
       - name: Start application
         run: |
           pnpm start &
           pnpm dlx wait-on http://localhost:3000 --timeout 60000
 
       - name: Lighthouse CI performance audit
-        run: |
-          pnpm dlx @lhci/cli@0.12.x autorun
+        run: pnpm dlx @lhci/cli@0.15.x autorun
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
-      - name: Bundle size check
-        run: pnpm run analyze:bundle
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
 
   # Hook 3: Code Quality Gate
   code-quality-gate:
@@ -139,13 +129,15 @@ jobs:
       - name: Dependency audit (any runtime advisory, high+ dev advisory)
         run: pnpm run security:audit
 
+  semgrep-gate:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Semgrep security scan
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security-audit
-            p/secrets
-            p/owasp-top-ten
+        run: semgrep scan --config p/security-audit --config p/secrets --config p/owasp-top-ten --error
 
   # Hook 5: License Compliance Gate
   license-gate:

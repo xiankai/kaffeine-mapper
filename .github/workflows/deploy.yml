@@ -21,6 +21,7 @@ env:
 
 jobs:
   build:
+    if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
 
     steps:
@@ -54,7 +55,7 @@ jobs:
           path: ./dist
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.server_url == 'https://github.com' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
 
