@@ -1,38 +1,49 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AppProvider } from "./context/AppContext";
-import Navigation from "./components/Navigation";
-import MapView from "./components/MapView";
-import TimelineView from "./components/TimelineView";
-import ListView from "./components/ListView";
-import CafeDetails from "./components/CafeDetails";
-import ImportView from "./components/ImportView";
+import { HashRouter, Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { ExplorePage } from "./components/ExplorePage";
+import { ImportPage } from "./components/ImportPage";
+import { PlaceDetail } from "./components/PlaceDetail";
+import { PreferencesPage } from "./components/PreferencesPage";
+import { StoreProvider, useStore } from "./state/store";
 import "./App.css";
 
-function App() {
+function Shell() {
+  const { ready, dataset } = useStore();
+  if (!ready) return <p className="empty">Loading your cafés…</p>;
   return (
-    <AppProvider>
-      <Router>
-        <div className="app">
-          <Navigation />
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<Navigate to="/map" replace />} />
-              <Route path="/map" element={<MapView />} />
-              <Route path="/timeline" element={<TimelineView />} />
-              <Route path="/list" element={<ListView />} />
-              <Route path="/cafe/:id" element={<CafeDetails />} />
-              <Route path="/import" element={<ImportView />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </AppProvider>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <Navigate
+            to={dataset.places.length ? "/explore" : "/import"}
+            replace
+          />
+        }
+      />
+      <Route path="/explore" element={<ExplorePage />} />
+      <Route path="/place/:id" element={<PlaceDetail />} />
+      <Route path="/import" element={<ImportPage />} />
+      <Route path="/preferences" element={<PreferencesPage />} />
+    </Routes>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <StoreProvider>
+      <HashRouter>
+        <header className="topbar">
+          <span className="brand">☕ Kaffeine Mapper</span>
+          <nav aria-label="Main">
+            <NavLink to="/explore">Explore</NavLink>
+            <NavLink to="/import">Import</NavLink>
+            <NavLink to="/preferences">Scoring</NavLink>
+          </nav>
+        </header>
+        <main className="page">
+          <Shell />
+        </main>
+      </HashRouter>
+    </StoreProvider>
+  );
+}
