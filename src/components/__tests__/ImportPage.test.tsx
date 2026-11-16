@@ -4,10 +4,14 @@ import { renderWithStore } from "../../test/render";
 import { geocodeUnlocated } from "../../services/geocode";
 import { enrichPlaces, MATCHER_VERSION } from "../../services/overpass";
 import { parseTimelineFile } from "../../services/parseTimelineFile";
+import { takeShared } from "../../services/shareInbox";
 import { ImportPage } from "../ImportPage";
 
 jest.mock("../../services/parseTimelineFile", () => ({
   parseTimelineFile: jest.fn(),
+}));
+jest.mock("../../services/shareInbox", () => ({
+  takeShared: jest.fn(async () => ({ files: [], links: [] })),
 }));
 jest.mock("../../services/storage", () => ({
   ...jest.requireActual("../../services/storage"),
@@ -142,6 +146,44 @@ describe("ImportPage", () => {
     expect(
       await screen.findByText("Overpass returned 400"),
     ).toBeInTheDocument();
+  });
+
+  it("imports what was shared to the app", async () => {
+    (parseTimelineFile as jest.Mock).mockResolvedValue({
+      places: [place({ id: "g:shared" })],
+      visitCount: 1,
+      segmentCount: 1,
+    });
+    (takeShared as jest.Mock).mockResolvedValueOnce({
+      files: [
+        file("Timeline.json", '{"semanticSegments": []}'),
+        file("Want to go.csv", "Title,Note,URL,Tags,Comment\nKiln,,,,\n"),
+      ],
+      links: [{ text: "Blue Door\nhttps://maps.app.goo.gl/x" }, { text: " " }],
+    });
+    renderWithStore(<ImportPage />);
+    await expectStatus(
+      "Shared timeline: 1 new places, 0 updated, 0 new visits. Shared places: 2 new places, 0 updated, 0 new visits.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Locate 2 saved places by name" }),
+    ).toBeInTheDocument();
+  });
+
+  it("says so when a share holds nothing usable", async () => {
+    (takeShared as jest.Mock).mockResolvedValueOnce({
+      files: [],
+      links: [{ text: " " }],
+    });
+    renderWithStore(<ImportPage />);
+    await expectStatus("Nothing to import in what you shared.");
+  });
+
+  it("ignores an unreadable share inbox", async () => {
+    (takeShared as jest.Mock).mockRejectedValueOnce(new Error("no caches"));
+    renderWithStore(<ImportPage />);
+    await waitFor(() => expect(takeShared).toHaveBeenCalled());
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("exports and restores backups", async () => {

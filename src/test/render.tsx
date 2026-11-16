@@ -3,6 +3,7 @@ import { ReactElement } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { DEFAULT_PREFERENCES } from "../domain/scoring";
 import { Place } from "../domain/types";
+import { EnrichmentProvider } from "../state/enrichment";
 import { StoreProvider } from "../state/store";
 
 export function renderWithStore(
@@ -16,12 +17,14 @@ export function renderWithStore(
         preferences: DEFAULT_PREFERENCES,
       }}
     >
-      <MemoryRouter initialEntries={[route]}>
-        <Routes>
-          <Route path={path} element={ui} />
-          <Route path="*" element={<p>elsewhere</p>} />
-        </Routes>
-      </MemoryRouter>
+      <EnrichmentProvider refreshOnOpen={false}>
+        <MemoryRouter initialEntries={[route]}>
+          <Routes>
+            <Route path={path} element={ui} />
+            <Route path="*" element={<p>elsewhere</p>} />
+          </Routes>
+        </MemoryRouter>
+      </EnrichmentProvider>
     </StoreProvider>,
   );
 }

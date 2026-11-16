@@ -1,11 +1,50 @@
-import { defineConfig } from "vite";
+import { defineConfig, build } from "vite";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
 
 const basePath = process.env.BASE_PATH;
+const buildTime = new Date().toISOString();
+
+function serviceWorker() {
+  let outDir = "dist";
+  let bundled = [];
+  return {
+    name: "kaffeine-service-worker",
+    apply: "build",
+    configResolved(config) {
+      outDir = config.build.outDir;
+    },
+    generateBundle(_, bundle) {
+      bundled = Object.keys(bundle).filter(
+        (file) => !file.endsWith(".map") && file !== "index.html",
+      );
+    },
+    async closeBundle() {
+      await build({
+        configFile: false,
+        logLevel: "warn",
+        define: {
+          __SW_VERSION__: JSON.stringify(buildTime),
+          __SW_PRECACHE__: JSON.stringify(bundled),
+        },
+        build: {
+          outDir,
+          emptyOutDir: false,
+          sourcemap: false,
+          copyPublicDir: false,
+          lib: {
+            entry: "src/sw/serviceWorker.ts",
+            formats: ["iife"],
+            name: "kaffeineServiceWorker",
+            fileName: () => "sw.js",
+          },
+        },
+      });
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), serviceWorker()],
 
   base: basePath ?? "./",
 
@@ -13,10 +52,8 @@ export default defineConfig({
     outDir: "dist",
     assetsDir: "assets",
 
-    // Optimize for production deployment
     rollupOptions: {
       output: {
-        // Asset naming for cache busting
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split(".");
           const extType = info[info.length - 1];
@@ -33,16 +70,14 @@ export default defineConfig({
       },
     },
 
-    // Chunk splitting for better caching
     chunkSizeWarningLimit: 1600,
 
     sourcemap: !basePath,
   },
 
   define: {
-    // Environment variables
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __BUILD_TIME__: JSON.stringify(buildTime),
   },
 
   server: {

@@ -1,20 +1,18 @@
-import { ChangeEvent, ReactNode, useRef, useState } from "react";
+import { ChangeEvent, ReactNode, useEffect, useState } from "react";
 import { parseSavedCsv, parseStarredGeoJson } from "../domain/bookmarks";
 import { MergeSummary } from "../domain/merge";
+import { isTimelineJson, placeFromSharedLink } from "../domain/share";
 import { parseTakeoutZip } from "../domain/takeoutZip";
 import { Dataset, Place } from "../domain/types";
 import { centroid, geocodeUnlocated } from "../services/geocode";
-import { enrichPlaces, needsEnrichment } from "../services/overpass";
+import { needsEnrichment } from "../services/overpass";
 import { parseTimelineFile } from "../services/parseTimelineFile";
+import { SharedItems, takeShared } from "../services/shareInbox";
 import { parseDatasetFile } from "../services/storage";
+import { TaskStatus, useEnrichment } from "../state/enrichment";
 import { useStore } from "../state/store";
+import { EnrichmentStatus } from "./EnrichmentStatus";
 import { GetDataGuide } from "./GetDataGuide";
-
-type Status =
-  | { kind: "idle" }
-  | { kind: "busy"; text: string }
-  | { kind: "done"; text: string }
-  | { kind: "error"; text: string };
 
 const listName = (file: File) =>
   file.name.replace(/\.(csv|json|geojson)$/i, "");
@@ -30,6 +28,24 @@ async function parseBookmarkFile(file: File): Promise<Place[]> {
   return /\.(geo)?json$/i.test(file.name)
     ? parseStarredGeoJson(JSON.parse(text), listName(file))
     : parseSavedCsv(text, listName(file));
+}
+
+async function isTimelineFile(file: File): Promise<boolean> {
+  return /\.json$/i.test(file.name) && isTimelineJson(await file.text());
+}
+
+async function placesFromShare(
+  items: SharedItems,
+): Promise<{ timelines: File[]; places: Place[] }> {
+  const timelineFlags = await Promise.all(items.files.map(isTimelineFile));
+  const timelines = items.files.filter((_, i) => timelineFlags[i]);
+  const lists = items.files.filter((_, i) => !timelineFlags[i]);
+  const listPlaces = (await Promise.all(lists.map(parseBookmarkFile))).flat();
+  const linkPlaces = items.links.flatMap((link) => {
+    const shared = placeFromSharedLink(link);
+    return shared ? [shared] : [];
+  });
+  return { timelines, places: [...listPlaces, ...linkPlaces] };
 }
 
 function download(name: string, content: string) {
@@ -52,7 +68,7 @@ function onFiles(handle: (files: File[]) => void) {
 }
 
 function useTask() {
-  const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [status, setStatus] = useState<TaskStatus>({ kind: "idle" });
   const progress = (text: string) => setStatus({ kind: "busy", text });
   const run = async (text: string, task: () => Promise<string>) => {
     progress(text);
@@ -149,7 +165,7 @@ function BackupStep({
 function useImportActions() {
   const { dataset, importPlaces, applyEnriched, replaceDataset } = useStore();
   const { status, busy, progress, run } = useTask();
-  const abort = useRef<AbortController>();
+  const enrichment = useEnrichment();
   const stale = dataset.places.filter((p) => needsEnrichment(p, new Date()));
   const unlocated = dataset.places.filter((p) => !p.located && p.name);
 
@@ -165,26 +181,20 @@ function useImportActions() {
       return describe(importPlaces(places), `${files.length} saved list(s)`);
     });
 
-  const enrich = () => {
-    abort.current = new AbortController();
-    const { signal } = abort.current;
-    let done = 0;
-    run(`Matching ${stale.length} places against OpenStreetMap…`, async () => {
-      const onBatch = (enriched: Place[], finished: number, total: number) => {
-        done = finished;
-        applyEnriched(enriched);
-        progress(`Matched ${finished} of ${total} places…`);
-      };
-      try {
-        await enrichPlaces(stale, { signal, onBatch });
-      } catch (error) {
-        if (signal.aborted)
-          return `Stopped after ${done} places; progress is saved.`;
-        throw error;
+  const importShared = (items: SharedItems) =>
+    run("Importing what you shared…", async () => {
+      const { timelines, places } = await placesFromShare(items);
+      const parts = [];
+      for (const file of timelines) {
+        const result = await parseTimelineFile(file);
+        parts.push(describe(importPlaces(result.places), "Shared timeline"));
       }
-      return `Checked ${stale.length} places against OpenStreetMap.`;
+      if (places.length)
+        parts.push(describe(importPlaces(places), "Shared places"));
+      return parts.join(" ") || "Nothing to import in what you shared.";
     });
-  };
+
+  const enrich = () => enrichment.enrich(stale);
 
   const locate = () =>
     run(`Locating ${unlocated.length} saved places by name…`, async () => {
@@ -207,15 +217,27 @@ function useImportActions() {
     dataset,
     status,
     busy,
-    abort,
+    enriching: enrichment.running,
     stale,
     unlocated,
     importTimeline,
     importBookmarks,
+    importShared,
     enrich,
     locate,
     restore,
   };
+}
+
+function useSharedInbox(onShared: (items: SharedItems) => void) {
+  const [handler] = useState(() => onShared);
+  useEffect(() => {
+    takeShared()
+      .then((items) => {
+        if (items.files.length + items.links.length > 0) handler(items);
+      })
+      .catch(() => undefined);
+  }, [handler]);
 }
 
 export function ImportPage() {
@@ -223,15 +245,17 @@ export function ImportPage() {
     dataset,
     status,
     busy,
-    abort,
+    enriching,
     stale,
     unlocated,
     importTimeline,
     importBookmarks,
+    importShared,
     enrich,
     locate,
     restore,
   } = useImportActions();
+  useSharedInbox(importShared);
   return (
     <div className="import">
       <h1>Import</h1>
@@ -242,7 +266,7 @@ export function ImportPage() {
       <GetDataGuide />
       <Step
         title="1. Places you've been"
-        intro="Pick the Timeline JSON from your phone. Re-importing a newer export only adds new visits."
+        intro="Pick the Timeline JSON from your phone, or share it to Kaffeine Mapper once the app is installed. Re-importing a newer export only adds new visits."
       >
         <FilePicker
           label="Timeline JSON"
@@ -275,17 +299,13 @@ export function ImportPage() {
         <button
           type="button"
           onClick={enrich}
-          disabled={busy || stale.length === 0}
+          disabled={busy || enriching || stale.length === 0}
         >
           {stale.length
             ? `Enrich ${stale.length} places`
             : "Everything is up to date"}
         </button>
-        {busy && abort.current && (
-          <button type="button" onClick={() => abort.current?.abort()}>
-            Stop
-          </button>
-        )}
+        <EnrichmentStatus />
       </Step>
       <BackupStep dataset={dataset} busy={busy} onRestore={restore} />
       {status.kind !== "idle" && (

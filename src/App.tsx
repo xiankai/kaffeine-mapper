@@ -1,10 +1,24 @@
-import { HashRouter, Navigate, NavLink, Route, Routes } from "react-router-dom";
+import {
+  HashRouter,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
+import { EnrichmentStatus } from "./components/EnrichmentStatus";
 import { ExplorePage } from "./components/ExplorePage";
 import { ImportPage } from "./components/ImportPage";
 import { PlaceDetail } from "./components/PlaceDetail";
 import { PreferencesPage } from "./components/PreferencesPage";
+import { EnrichmentProvider } from "./state/enrichment";
 import { StoreProvider, useStore } from "./state/store";
 import "./App.css";
+
+function BackgroundStatus() {
+  const { pathname } = useLocation();
+  return pathname === "/import" ? null : <EnrichmentStatus />;
+}
 
 function Shell() {
   const { ready, dataset } = useStore();
@@ -31,19 +45,22 @@ function Shell() {
 export default function App() {
   return (
     <StoreProvider>
-      <HashRouter>
-        <header className="topbar">
-          <span className="brand">☕ Kaffeine Mapper</span>
-          <nav aria-label="Main">
-            <NavLink to="/explore">Explore</NavLink>
-            <NavLink to="/import">Import</NavLink>
-            <NavLink to="/preferences">Scoring</NavLink>
-          </nav>
-        </header>
-        <main className="page">
-          <Shell />
-        </main>
-      </HashRouter>
+      <EnrichmentProvider>
+        <HashRouter>
+          <header className="topbar">
+            <span className="brand">☕ Kaffeine Mapper</span>
+            <nav aria-label="Main">
+              <NavLink to="/explore">Explore</NavLink>
+              <NavLink to="/import">Import</NavLink>
+              <NavLink to="/preferences">Scoring</NavLink>
+            </nav>
+          </header>
+          <main className="page">
+            <Shell />
+            <BackgroundStatus />
+          </main>
+        </HashRouter>
+      </EnrichmentProvider>
     </StoreProvider>
   );
 }

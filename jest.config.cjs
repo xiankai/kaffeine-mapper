@@ -54,6 +54,7 @@ module.exports = {
     "!src/App.tsx",
     "!src/services/timelineWorker.ts",
     "!src/services/parseTimelineFile.ts",
+    "!src/sw/serviceWorker.ts",
   ],
 
   // Skip coverage instrumentation for these paths
