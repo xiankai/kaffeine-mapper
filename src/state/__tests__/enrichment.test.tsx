@@ -29,10 +29,14 @@ const checked = (id: string, days: number, extra: Partial<Place> = {}) =>
 
 let enrichment: ReturnType<typeof useEnrichment> | undefined;
 let checkedAt: (id: string) => string | undefined = () => undefined;
+let current: (id: string) => Place | undefined = () => undefined;
+let edit: ReturnType<typeof useStore>["editPlace"] = () => undefined;
 
 function Probe() {
   enrichment = useEnrichment();
-  const { dataset } = useStore();
+  const { dataset, editPlace } = useStore();
+  edit = editPlace;
+  current = (id) => dataset.places.find((p) => p.id === id);
   checkedAt = (id) => dataset.places.find((p) => p.id === id)?.osmCheckedAt;
   return <EnrichmentStatus />;
 }
@@ -139,6 +143,38 @@ describe("EnrichmentProvider", () => {
     expect(
       screen.queryByRole("button", { name: "Stop" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps edits made while a batch was in flight", async () => {
+    let deliver: () => void = () => undefined;
+    (enrichPlaces as jest.Mock).mockImplementation(
+      (places: Place[], { onBatch }) =>
+        new Promise<void>((resolve) => {
+          deliver = () => {
+            onBatch(
+              places.map((p) => ({
+                ...p,
+                osm: { id: "node/9", distanceM: 3, tags: {} },
+                osmCheckedAt: NOW.toISOString(),
+                osmMatcher: MATCHER_VERSION,
+              })),
+              1,
+              1,
+            );
+            resolve();
+          };
+        }),
+    );
+    mount([place({ id: "a" })], false);
+    act(() => enrichment?.enrich([place({ id: "a" })]));
+    act(() => edit("a", (p) => ({ ...p, manual: { rating: 5 } })));
+    await act(async () => deliver());
+    expect(current("a")).toMatchObject({
+      manual: { rating: 5 },
+      osm: { id: "node/9" },
+      osmCheckedAt: NOW.toISOString(),
+      osmMatcher: MATCHER_VERSION,
+    });
   });
 
   it("ignores an empty request", () => {
