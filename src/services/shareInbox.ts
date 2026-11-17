@@ -92,8 +92,8 @@ export async function takeShared(
   const cache = await inbox.open(INBOX_CACHE);
   for (const request of await cache.keys()) {
     const response = await cache.match(request);
+    if (response) await readEntry(response, items).catch(() => undefined);
     await cache.delete(request);
-    if (response) await readEntry(response, items);
   }
   return items;
 }

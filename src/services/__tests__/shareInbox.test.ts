@@ -72,6 +72,23 @@ describe("share inbox", () => {
     expect(await takeShared(caches)).toEqual({ files: [], links: [] });
   });
 
+  it("skips a malformed entry without losing the rest of the share", async () => {
+    const caches = new FakeCaches();
+    const cache = await caches.open(INBOX_CACHE);
+    await cache.put(
+      `${BASE}share-inbox/1-0`,
+      new Response("{not json", {
+        headers: { "content-type": "application/x-kaffeine-link" },
+      }),
+    );
+    await stashShare(form([["title", "Kiln"]]), caches, BASE, 2);
+    expect(await takeShared(caches)).toEqual({
+      files: [],
+      links: [{ title: "Kiln" }],
+    });
+    expect(caches.stores.get(INBOX_CACHE)?.entries.size).toBe(0);
+  });
+
   it("returns nothing when the Cache API is missing", async () => {
     expect(await takeShared(undefined)).toEqual({ files: [], links: [] });
   });

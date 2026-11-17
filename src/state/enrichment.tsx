@@ -43,6 +43,7 @@ function useRunner(applyOsm: (places: Place[]) => void) {
 
   const run = useCallback(
     async (places: Place[], intro: string, outro: string) => {
+      // stack-reviewer-ignore: no status is set before this guard and enrich no longer runs through ImportPage's useTask, so an empty or overlapping request leaves the current status untouched
       if (abort.current || places.length === 0) return;
       const controller = new AbortController();
       abort.current = controller;
