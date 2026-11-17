@@ -55,6 +55,7 @@ export interface Store {
   scoreContext: ScoreContext;
   importPlaces: (places: Place[]) => MergeSummary;
   applyEnriched: (places: Place[]) => void;
+  applyOsm: (places: Place[]) => void;
   editPlace: (id: string, change: (p: Place) => Place) => void;
   replaceDataset: (dataset: Dataset) => void;
   setPreferences: (preferences: Preferences) => void;
@@ -67,6 +68,30 @@ export function replacePlaces(dataset: Dataset, places: Place[]): Dataset {
   return linkByOsm({
     ...dataset,
     places: dataset.places.map((p) => byId.get(p.id) ?? p),
+  });
+}
+
+function withOsmFrom(current: Place, enriched: Place): Place {
+  const { osm: _osm, osmCandidates: _candidates, ...rest } = current;
+  return {
+    ...rest,
+    ...(enriched.osm && { osm: enriched.osm }),
+    ...(enriched.osmCandidates && { osmCandidates: enriched.osmCandidates }),
+    ...(enriched.osmCheckedAt && { osmCheckedAt: enriched.osmCheckedAt }),
+    ...(enriched.osmMatcher !== undefined && {
+      osmMatcher: enriched.osmMatcher,
+    }),
+  };
+}
+
+export function mergeOsm(dataset: Dataset, enriched: Place[]): Dataset {
+  const byId = new Map(enriched.map((p) => [p.id, p]));
+  return linkByOsm({
+    ...dataset,
+    places: dataset.places.map((p) => {
+      const match = byId.get(p.id);
+      return match ? withOsmFrom(p, match) : p;
+    }),
   });
 }
 
@@ -114,6 +139,11 @@ export function StoreProvider({
     [commit],
   );
 
+  const applyOsm = useCallback(
+    (places: Place[]) => commit(mergeOsm(datasetRef.current, places)),
+    [commit],
+  );
+
   const editPlace = useCallback(
     (id: string, change: (p: Place) => Place) =>
       // stack-reviewer-ignore: linkByOsm only folds places sharing a confirmed OSM id and is idempotent; applyEnriched already runs it on every batch
@@ -142,6 +172,7 @@ export function StoreProvider({
       scoreContext,
       importPlaces,
       applyEnriched,
+      applyOsm,
       editPlace,
       replaceDataset: commit,
       setPreferences,
@@ -151,6 +182,7 @@ export function StoreProvider({
       scoreContext,
       importPlaces,
       applyEnriched,
+      applyOsm,
       editPlace,
       commit,
       setPreferences,

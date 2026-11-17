@@ -12,6 +12,12 @@ Everything runs in your browser. Your data stays in IndexedDB; only coordinates 
 4. **Review** each place (café or not) and add what OSM can't know: sockets, wi-fi strength and limit, seat availability per time slot, your rating.
 5. **Tune** the weights on the Scoring page. A criterion with no data is skipped rather than counted as zero, and each score shows how much of it is known.
 
+## Install it
+
+Kaffeine Mapper is an installable app (PWA): use your browser's _Install_ or _Add to Home Screen_. Once installed it works offline, and on Android and desktop Chrome it shows up in the share sheet. Share a Timeline export, a Takeout zip, a saved-list CSV or a place from Google Maps to it and it opens the Import page with the share already imported. iOS has no share target; use the file pickers there.
+
+Each time the app opens online, places whose OpenStreetMap data is more than 30 days old are refreshed in the background.
+
 ## Develop
 
 ```bash
