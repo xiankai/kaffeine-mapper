@@ -223,6 +223,57 @@ describe("pullSavedPlaces", () => {
     expect(timeBased).toHaveBeenCalledTimes(1);
   });
 
+  it("forgets a token Google rejected or a reset revoked, and keeps a good one", async () => {
+    const stored = (session: MemoryStorage) =>
+      session.setItem("kaffeine:google-token", JSON.stringify(token()));
+    const rejected = new MemoryStorage();
+    stored(rejected);
+    await expect(
+      pullSavedPlaces(token(), {
+        session: rejected,
+        jobs: new MemoryStorage(),
+        fetchImpl: api({ "portabilityArchive:initiate": () => json({}, 401) }),
+      }),
+    ).rejects.toMatchObject({ kind: "unauthenticated" });
+    expect(currentToken(rejected)).toBeUndefined();
+
+    const reset = new MemoryStorage();
+    stored(reset);
+    await expect(
+      pullSavedPlaces(token(), {
+        session: reset,
+        jobs: new MemoryStorage(),
+        fetchImpl: api({
+          "portabilityArchive:initiate": () =>
+            json(
+              {
+                error: {
+                  status: "RESOURCE_EXHAUSTED",
+                  details: [
+                    { metadata: { access_type: "ACCESS_TYPE_ONE_TIME" } },
+                  ],
+                },
+              },
+              429,
+            ),
+          "authorization:reset": () => json({}),
+        }),
+      }),
+    ).rejects.toMatchObject({ kind: "already-exported" });
+    expect(currentToken(reset)).toBeUndefined();
+
+    const kept = new MemoryStorage();
+    stored(kept);
+    await expect(
+      pullSavedPlaces(token(), {
+        session: kept,
+        jobs: new MemoryStorage(),
+        fetchImpl: api({ "portabilityArchive:initiate": () => json({}, 503) }),
+      }),
+    ).rejects.toMatchObject({ kind: "unavailable" });
+    expect(currentToken(kept)).toBeDefined();
+  });
+
   it("defaults to the browser's fetch and localStorage", async () => {
     const original = global.fetch;
     global.fetch = api({

@@ -78,6 +78,7 @@ export interface PullOptions {
   fetchImpl?: typeof fetch;
   wait?: (ms: number) => Promise<void>;
   jobs?: KeyValue;
+  session?: KeyValue;
   onStatus?: (text: string) => void;
 }
 
@@ -120,9 +121,31 @@ function parseArchives(archives: Uint8Array[]): PulledPlaces {
   };
 }
 
+function tokenSpent(error: unknown): boolean {
+  return (
+    error instanceof DataPortabilityError &&
+    (error.kind === "unauthenticated" ||
+      (error.kind === "already-exported" &&
+        error.accessType === "ACCESS_TYPE_ONE_TIME"))
+  );
+}
+
 export async function pullSavedPlaces(
   token: AccessToken,
   options: PullOptions = {},
+): Promise<PulledPlaces> {
+  const { session = sessionStorage, ...rest } = options;
+  try {
+    return await pullWithToken(token, rest);
+  } catch (error) {
+    if (tokenSpent(error)) session.removeItem(TOKEN_KEY);
+    throw error;
+  }
+}
+
+async function pullWithToken(
+  token: AccessToken,
+  options: Omit<PullOptions, "session">,
 ): Promise<PulledPlaces> {
   const { fetchImpl = fetch, wait, jobs = localStorage, onStatus } = options;
   const client = createClient({
