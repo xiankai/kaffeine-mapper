@@ -172,6 +172,18 @@ describe("respond", () => {
     expect(empty.type).toBe("error");
   });
 
+  it("doesn't let another in-scope page replace the shell", async () => {
+    const cache = new FakeCache();
+    await cache.put(SCOPE, new Response("shell v1"));
+    await respond(
+      navigate(`${SCOPE}tutorial/takeout-select.jpg`),
+      cache as unknown as Cache,
+      SCOPE,
+      fetchReturning(() => new Response("image")),
+    );
+    expect(await (await cache.match(SCOPE))?.text()).toBe("shell v1");
+  });
+
   it("leaves the cached shell alone when a navigation fails", async () => {
     const cache = new FakeCache();
     await cache.put(SCOPE, new Response("shell v1"));

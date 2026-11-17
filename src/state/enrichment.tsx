@@ -37,7 +37,7 @@ export function isExpired(place: Place, now: Date): boolean {
 const errorText = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-function useRunner(applyEnriched: (places: Place[]) => void) {
+function useRunner(applyOsm: (places: Place[]) => void) {
   const [status, setStatus] = useState<TaskStatus>({ kind: "idle" });
   const abort = useRef<AbortController>();
 
@@ -53,7 +53,7 @@ function useRunner(applyEnriched: (places: Place[]) => void) {
           signal: controller.signal,
           onBatch: (enriched, finished, total) => {
             done = finished;
-            applyEnriched(enriched);
+            applyOsm(enriched);
             setStatus({
               kind: "busy",
               text: `Matched ${finished} of ${total} places…`,
@@ -74,7 +74,7 @@ function useRunner(applyEnriched: (places: Place[]) => void) {
         abort.current = undefined;
       }
     },
-    [applyEnriched],
+    [applyOsm],
   );
 
   const stop = useCallback(() => abort.current?.abort(), []);
@@ -88,8 +88,8 @@ export function EnrichmentProvider({
   children: ReactNode;
   refreshOnOpen?: boolean;
 }) {
-  const { ready, dataset, applyEnriched } = useStore();
-  const { status, run, stop } = useRunner(applyEnriched);
+  const { ready, dataset, applyOsm } = useStore();
+  const { status, run, stop } = useRunner(applyOsm);
   const refreshed = useRef(false);
 
   useEffect(() => {

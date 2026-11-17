@@ -51,6 +51,11 @@ export async function receiveShare(
   return Response.redirect(new URL(SHARE_LANDING, scope).href, 303);
 }
 
+function isShell(request: Request, scope: string): boolean {
+  const url = new URL(request.url);
+  return `${url.origin}${url.pathname}` === scope;
+}
+
 async function networkFirst(
   request: Request,
   cache: AppCache,
@@ -59,7 +64,8 @@ async function networkFirst(
 ): Promise<Response> {
   try {
     const response = await fetchImpl(request);
-    if (response.ok) await cache.put(scope, response.clone());
+    if (response.ok && isShell(request, scope))
+      await cache.put(scope, response.clone());
     return response;
   } catch {
     return (await cache.match(scope)) ?? Response.error();
