@@ -18,6 +18,21 @@ Kaffeine Mapper is an installable app (PWA): use your browser's _Install_ or _Ad
 
 Each time the app opens online, places whose OpenStreetMap data is more than 30 days old are refreshed in the background.
 
+## Pull saved places from Google
+
+With a Google OAuth client ID configured, the Import page offers **Pull saved places from Google**, which uses the [Data Portability API](https://developers.google.com/data-portability) to fetch saved lists and starred places without a Takeout round trip. Timeline isn't available through it; keep importing the on-device export.
+
+Setup, once, in a Google Cloud project:
+
+1. Enable the Data Portability API.
+2. Create an OAuth client of type _Web application_. Add the app's URL as an authorised JavaScript origin, and the app's full URL (for example `https://<user>.github.io/kaffeine-mapper/`) as an authorised redirect URI.
+3. Add the scopes `dataportability.saved.collections` and `dataportability.maps.starred_places`, and add your own account as a test user. These are restricted scopes, so anyone else needs the app verified.
+4. Build with the client ID in `GOOGLE_CLIENT_ID` (`GOOGLE_CLIENT_ID=… pnpm build`). The Pages deploy reads the repository variable `GOOGLE_CLIENT_ID`. Without it the button stays hidden.
+
+On the consent screen, pick 30 or 180 days to allow a fresh pull every 24 hours; a one-time grant needs signing in again for each pull. The export can take a while, and the app resumes waiting for it the next time you pull. If the browser can't download the archive, the page links it so you can save it and import the zip by hand.
+
+The client lives in `src/dataPortability/` with no app imports, so other projects can copy it.
+
 ## Develop
 
 ```bash
