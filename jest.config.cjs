@@ -31,6 +31,8 @@ module.exports = {
     ],
   },
 
+  globals: { __GOOGLE_CLIENT_ID__: "" },
+
   // Test file patterns
   testMatch: [
     "<rootDir>/src/**/__tests__/**/*.(ts|tsx|js|jsx)",

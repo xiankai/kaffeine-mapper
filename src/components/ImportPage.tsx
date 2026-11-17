@@ -1,10 +1,13 @@
 import { ChangeEvent, ReactNode, useEffect, useState } from "react";
+import { GOOGLE_CLIENT_ID } from "../config";
+import { AccessToken, DownloadBlockedError } from "../dataPortability";
 import { parseSavedCsv, parseStarredGeoJson } from "../domain/bookmarks";
 import { MergeSummary } from "../domain/merge";
 import { isTimelineJson, placeFromSharedLink } from "../domain/share";
 import { parseTakeoutZip } from "../domain/takeoutZip";
 import { Dataset, Place } from "../domain/types";
 import { centroid, geocodeUnlocated } from "../services/geocode";
+import { describeExportError, pullSavedPlaces } from "../services/googleExport";
 import { needsEnrichment } from "../services/overpass";
 import { parseTimelineFile } from "../services/parseTimelineFile";
 import { SharedItems, takeShared } from "../services/shareInbox";
@@ -13,6 +16,7 @@ import { TaskStatus, useEnrichment } from "../state/enrichment";
 import { useStore } from "../state/store";
 import { EnrichmentStatus } from "./EnrichmentStatus";
 import { GetDataGuide } from "./GetDataGuide";
+import { GooglePull } from "./GooglePull";
 
 const listName = (file: File) =>
   file.name.replace(/\.(csv|json|geojson)$/i, "");
@@ -166,6 +170,7 @@ function useImportActions() {
   const { dataset, importPlaces, applyEnriched, replaceDataset } = useStore();
   const { status, busy, progress, run } = useTask();
   const enrichment = useEnrichment();
+  const [archiveLinks, setArchiveLinks] = useState<string[]>([]);
   const stale = dataset.places.filter((p) => needsEnrichment(p, new Date()));
   const unlocated = dataset.places.filter((p) => !p.located && p.name);
 
@@ -207,6 +212,24 @@ function useImportActions() {
       return `Located ${located.filter((p) => p.located).length} of ${unlocated.length} saved places. Review them before trusting the match.`;
     });
 
+  const pullFromGoogle = (token: AccessToken) => {
+    setArchiveLinks([]);
+    run("Asking Google for your saved places…", async () => {
+      try {
+        const pulled = await pullSavedPlaces(token, { onStatus: progress });
+        return describe(importPlaces(pulled.places), "Google saved places");
+      } catch (error) {
+        if (error instanceof DownloadBlockedError) setArchiveLinks(error.urls);
+        throw new Error(describeExportError(error));
+      }
+    });
+  };
+
+  const signInFailed = (error: string) =>
+    run("Signing in to Google…", async () => {
+      throw new Error(error);
+    });
+
   const restore = ([file]: File[]) =>
     run("Restoring backup…", async () => {
       replaceDataset(parseDatasetFile(JSON.parse(await file!.text())));
@@ -223,6 +246,9 @@ function useImportActions() {
     importTimeline,
     importBookmarks,
     importShared,
+    pullFromGoogle,
+    signInFailed,
+    archiveLinks,
     enrich,
     locate,
     restore,
@@ -251,6 +277,9 @@ export function ImportPage() {
     importTimeline,
     importBookmarks,
     importShared,
+    pullFromGoogle,
+    signInFailed,
+    archiveLinks,
     enrich,
     locate,
     restore,
@@ -286,6 +315,12 @@ export function ImportPage() {
           disabled={busy}
           onPick={importBookmarks}
         />
+        <GooglePull
+          clientId={GOOGLE_CLIENT_ID}
+          busy={busy}
+          onPull={pullFromGoogle}
+          onSignInError={signInFailed}
+        />
         {unlocated.length > 0 && (
           <button type="button" onClick={locate} disabled={busy}>
             Locate {unlocated.length} saved places by name
@@ -312,6 +347,17 @@ export function ImportPage() {
         <p role="status" className={`status ${status.kind}`}>
           {status.text}
         </p>
+      )}
+      {archiveLinks.length > 0 && (
+        <ul className="archive-links">
+          {archiveLinks.map((url, n) => (
+            <li key={url}>
+              <a href={url} target="_blank" rel="noreferrer">
+                Google export archive {n + 1}
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
