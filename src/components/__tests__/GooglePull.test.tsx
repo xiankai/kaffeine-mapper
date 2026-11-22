@@ -144,6 +144,20 @@ describe("Import page Google pull", () => {
     await expectStatus("Google sign-in failed: x");
   });
 
+  it("explains the region limit when Google denies access", async () => {
+    sessionStorage.setItem(
+      "kaffeine:google-error",
+      "Google sign-in failed: access_denied",
+    );
+    renderWithStore(<ImportPage />);
+    await expectStatus(/access_denied\. Google only offers this .*Takeout zip/);
+  });
+
+  it("labels the pull as Europe only", () => {
+    renderWithStore(<ImportPage />);
+    expect(screen.getByText("Europe only.")).toBeInTheDocument();
+  });
+
   it("offers the archive links when the browser can't download them", async () => {
     signedIn();
     (pullSavedPlaces as jest.Mock).mockRejectedValue(

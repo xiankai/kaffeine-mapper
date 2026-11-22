@@ -2,13 +2,15 @@ import { TAKEOUT_URL } from "../domain/takeoutZip";
 
 export function GetDataGuide() {
   return (
-    <details className="guide step" open>
+    <details className="guide step">
       <summary>
         <h2>Get your data from Google (5 minutes)</h2>
       </summary>
 
-      <div className="guide-part">
-        <h3>A. Places you&apos;ve been: Timeline, on your phone</h3>
+      <details className="guide-part">
+        <summary>
+          <h3>A. Places you&apos;ve been: Timeline, on your phone</h3>
+        </summary>
         <p className="muted">
           Google keeps Timeline only on the phone that records it, so this part
           happens there.
@@ -27,10 +29,12 @@ export function GetDataGuide() {
             send it to yourself), then pick it in step 1 below.
           </li>
         </ol>
-      </div>
+      </details>
 
-      <div className="guide-part">
-        <h3>B. Places you saved: Google Takeout</h3>
+      <details className="guide-part">
+        <summary>
+          <h3>B. Places you saved: Google Takeout</h3>
+        </summary>
         <a className="cta" href={TAKEOUT_URL} target="_blank" rel="noreferrer">
           Open Takeout with the right data pre-selected ↗
         </a>
@@ -76,7 +80,7 @@ export function GetDataGuide() {
             />
           </li>
         </ol>
-      </div>
+      </details>
     </details>
   );
 }

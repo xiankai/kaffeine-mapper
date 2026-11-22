@@ -16,6 +16,14 @@ export interface GooglePullProps {
 
 const appUrl = () => `${location.origin}${location.pathname}`;
 
+const REGION_LIMIT =
+  "Google only offers this to personal accounts in the EEA, the UK and Switzerland.";
+
+const explain = (error: string) =>
+  error.endsWith("access_denied")
+    ? `${error}. ${REGION_LIMIT} Import the Takeout zip instead.`
+    : error;
+
 export function GooglePull({
   clientId,
   busy,
@@ -28,7 +36,7 @@ export function GooglePull({
   useEffect(() => {
     const { pending, error } = takePendingPull();
     const token = currentToken();
-    if (error) handlers.onSignInError(error);
+    if (error) handlers.onSignInError(explain(error));
     else if (pending && token) handlers.onPull(token);
   }, [handlers]);
 
@@ -39,8 +47,13 @@ export function GooglePull({
     else redirect(signInUrl(clientId, appUrl()));
   };
   return (
-    <button type="button" onClick={pull} disabled={busy}>
-      Pull saved places from Google
-    </button>
+    <div className="google-pull">
+      <button type="button" onClick={pull} disabled={busy}>
+        Pull saved places from Google
+      </button>
+      <p className="muted">
+        <strong>Europe only.</strong> {REGION_LIMIT}
+      </p>
+    </div>
   );
 }
