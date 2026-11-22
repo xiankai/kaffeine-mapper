@@ -407,8 +407,21 @@ fieldset {
 }
 
 .guide h3 {
+  display: inline;
   font-size: 1rem;
-  margin: 1.25rem 0 0.25rem;
+}
+
+.guide-part {
+  margin-top: 1rem;
+}
+
+.guide-part > summary {
+  margin-bottom: 0.25rem;
+}
+
+.google-pull .muted {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
 }
 
 .guide ol {

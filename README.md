@@ -20,7 +20,7 @@ Each time the app opens online, places whose OpenStreetMap data is more than 30 
 
 ## Pull saved places from Google
 
-With a Google OAuth client ID configured, the Import page offers **Pull saved places from Google**, which uses the [Data Portability API](https://developers.google.com/data-portability) to fetch saved lists and starred places without a Takeout round trip. Timeline isn't available through it; keep importing the on-device export.
+With a Google OAuth client ID configured, the Import page offers **Pull saved places from Google**, which uses the [Data Portability API](https://developers.google.com/data-portability) to fetch saved lists and starred places without a Takeout round trip. Timeline isn't available through it; keep importing the on-device export. Google only offers the API to personal accounts in the EEA, the UK and Switzerland ([availability](https://support.google.com/accounts/answer/14452558)); anyone else gets `access_denied` at sign-in and imports the Takeout zip instead.
 
 Setup, once, in a Google Cloud project:
 
