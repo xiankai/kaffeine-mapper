@@ -220,7 +220,7 @@ function useImportActions() {
         return describe(importPlaces(pulled.places), "Google saved places");
       } catch (error) {
         if (error instanceof DownloadBlockedError) setArchiveLinks(error.urls);
-        throw new Error(describeExportError(error));
+        throw new Error(describeExportError(error), { cause: error });
       }
     });
   };

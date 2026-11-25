@@ -1,8 +1,8 @@
 import {
   createContext,
   ReactNode,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useReducer,
@@ -189,13 +189,11 @@ export function StoreProvider({
     ],
   );
 
-  return (
-    <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
-  );
+  return <StoreContext value={value}>{children}</StoreContext>;
 }
 
 export function useStore(): Store {
-  const store = useContext(StoreContext);
+  const store = use(StoreContext);
   if (!store) throw new Error("useStore must be used inside StoreProvider");
   return store;
 }
