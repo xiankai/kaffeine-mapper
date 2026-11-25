@@ -110,13 +110,13 @@ export function StoreProvider({
     ready: initial !== undefined,
   });
   const datasetRef = useRef(state.dataset);
-  datasetRef.current = state.dataset;
 
   useEffect(() => {
     if (initial) return;
-    loadPersisted().then((persisted) =>
-      dispatch({ type: "loaded", persisted }),
-    );
+    loadPersisted().then((persisted) => {
+      datasetRef.current = persisted.dataset;
+      dispatch({ type: "loaded", persisted });
+    });
   }, [initial]);
 
   const commit = useCallback((dataset: Dataset) => {
