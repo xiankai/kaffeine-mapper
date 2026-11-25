@@ -1,8 +1,8 @@
 import {
   createContext,
   ReactNode,
+  use,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -39,14 +39,14 @@ const errorText = (error: unknown) =>
 
 function useRunner(applyOsm: (places: Place[]) => void) {
   const [status, setStatus] = useState<TaskStatus>({ kind: "idle" });
-  const abort = useRef<AbortController | undefined>(undefined);
+  const abortRef = useRef<AbortController | undefined>(undefined);
 
   const run = useCallback(
     async (places: Place[], intro: string, outro: string) => {
       // stack-reviewer-ignore: no status is set before this guard and enrich no longer runs through ImportPage's useTask, so an empty or overlapping request leaves the current status untouched
-      if (abort.current || places.length === 0) return;
+      if (abortRef.current || places.length === 0) return;
       const controller = new AbortController();
-      abort.current = controller;
+      abortRef.current = controller;
       let done = 0;
       setStatus({ kind: "busy", text: intro });
       try {
@@ -72,13 +72,13 @@ function useRunner(applyOsm: (places: Place[]) => void) {
             : { kind: "error", text: errorText(error) },
         );
       } finally {
-        abort.current = undefined;
+        abortRef.current = undefined;
       }
     },
     [applyOsm],
   );
 
-  const stop = useCallback(() => abort.current?.abort(), []);
+  const stop = useCallback(() => abortRef.current?.abort(), []);
   return { status, run, stop };
 }
 
@@ -91,11 +91,11 @@ export function EnrichmentProvider({
 }) {
   const { ready, dataset, applyOsm } = useStore();
   const { status, run, stop } = useRunner(applyOsm);
-  const refreshed = useRef(false);
+  const refreshedRef = useRef(false);
 
   useEffect(() => {
-    if (!ready || !refreshOnOpen || refreshed.current) return;
-    refreshed.current = true;
+    if (!ready || !refreshOnOpen || refreshedRef.current) return;
+    refreshedRef.current = true;
     if (!navigator.onLine) return;
     const expired = dataset.places.filter((p) => isExpired(p, new Date()));
     run(
@@ -121,15 +121,11 @@ export function EnrichmentProvider({
     [status, enrich, stop],
   );
 
-  return (
-    <EnrichmentContext.Provider value={value}>
-      {children}
-    </EnrichmentContext.Provider>
-  );
+  return <EnrichmentContext value={value}>{children}</EnrichmentContext>;
 }
 
 export function useEnrichment(): Enrichment {
-  const enrichment = useContext(EnrichmentContext);
+  const enrichment = use(EnrichmentContext);
   if (!enrichment)
     throw new Error("useEnrichment must be used inside EnrichmentProvider");
   return enrichment;
