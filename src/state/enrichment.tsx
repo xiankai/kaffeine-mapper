@@ -39,7 +39,7 @@ const errorText = (error: unknown) =>
 
 function useRunner(applyOsm: (places: Place[]) => void) {
   const [status, setStatus] = useState<TaskStatus>({ kind: "idle" });
-  const abort = useRef<AbortController>();
+  const abort = useRef<AbortController | undefined>(undefined);
 
   const run = useCallback(
     async (places: Place[], intro: string, outro: string) => {

@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
 import { place } from "../../test/fixtures";
 import { EnrichmentStatus } from "../../components/EnrichmentStatus";
 import { DEFAULT_PREFERENCES } from "../../domain/scoring";
@@ -33,11 +34,14 @@ let current: (id: string) => Place | undefined = () => undefined;
 let edit: ReturnType<typeof useStore>["editPlace"] = () => undefined;
 
 function Probe() {
-  enrichment = useEnrichment();
+  const live = useEnrichment();
   const { dataset, editPlace } = useStore();
-  edit = editPlace;
-  current = (id) => dataset.places.find((p) => p.id === id);
-  checkedAt = (id) => dataset.places.find((p) => p.id === id)?.osmCheckedAt;
+  useEffect(() => {
+    enrichment = live;
+    edit = editPlace;
+    current = (id) => dataset.places.find((p) => p.id === id);
+    checkedAt = (id) => dataset.places.find((p) => p.id === id)?.osmCheckedAt;
+  });
   return <EnrichmentStatus />;
 }
 
