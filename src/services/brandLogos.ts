@@ -78,15 +78,16 @@ export async function resolveLogo(
   return logo;
 }
 
-const pending = new Map<string, Promise<string | null | undefined>>();
+const answered = new Map<string, Promise<string | null | undefined>>();
 
 export function loadLogo(qid: string): Promise<string | null | undefined> {
-  const known = pending.get(qid);
+  const known = answered.get(qid);
   if (known) return known;
   const request = resolveLogo(qid).then((logo) => {
-    if (logo === undefined) pending.delete(qid);
+    if (logo === undefined) answered.delete(qid);
     return logo;
   });
-  pending.set(qid, request);
+  // stack-reviewer-ignore: a session memo with one entry per brand Q-id shown on the map (tens of chains), kept so panning never re-reads IndexedDB or re-asks Wikidata; failures are dropped so they retry
+  answered.set(qid, request);
   return request;
 }
