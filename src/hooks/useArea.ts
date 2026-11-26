@@ -60,8 +60,9 @@ export function useArea(places: Place[]) {
   const [fix, setFix] = useState<Fix>(NO_FIX);
   const recent = useMemo(() => recentAnchor(places), [places]);
 
+  const { here, failed } = fix;
   useEffect(() => {
-    if (mode !== "near" || fix.here || fix.failed) return;
+    if (mode !== "near" || here || failed) return;
     deviceGeolocation()?.getCurrentPosition(
       ({ coords }) =>
         setFix({
@@ -71,7 +72,7 @@ export function useArea(places: Place[]) {
       () => setFix({ failed: true }),
       POSITION_OPTIONS,
     );
-  }, [mode, fix]);
+  }, [mode, here, failed]);
 
   const chooseMode = useCallback((next: AreaMode) => {
     writeMode(next);
