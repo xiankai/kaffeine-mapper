@@ -1,5 +1,6 @@
 import { get, set } from "idb-keyval";
 import {
+  bundledIcon,
   commonsThumb,
   entityUrl,
   faviconUrl,
@@ -137,6 +138,17 @@ describe("resolveLogo", () => {
   const store = () => ({
     load: jest.fn(async () => undefined as string | null | undefined),
     save: jest.fn(async () => undefined),
+  });
+
+  it("uses the bundled icon for chains with poor Wikidata data, without asking", async () => {
+    const s = store();
+    const fetchImpl = reply({});
+    expect(await resolveLogo("Q11322732", fetchImpl, s)).toBe(
+      "brand-icons/Q11322732.png",
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(s.load).not.toHaveBeenCalled();
+    expect(bundledIcon("Q37158")).toBeUndefined();
   });
 
   it("asks Wikidata once and caches the answer, including no logo", async () => {

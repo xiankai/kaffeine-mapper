@@ -102,11 +102,25 @@ export interface LogoStore {
 
 const idbStore: LogoStore = { load: get, save: set };
 
+const BUNDLED_ICONS = new Set([
+  "Q11322732",
+  "Q11289828",
+  "Q131692144",
+  "Q11305988",
+  "Q3541983",
+  "Q11294597",
+]);
+
+export const bundledIcon = (qid: string): string | undefined =>
+  BUNDLED_ICONS.has(qid) ? `brand-icons/${qid}.png` : undefined;
+
 export async function resolveLogo(
   qid: string,
   fetchImpl: typeof fetch = fetch,
   store: LogoStore = idbStore,
 ): Promise<string | null | undefined> {
+  const bundled = bundledIcon(qid);
+  if (bundled) return bundled;
   const cached = await store.load(logoKey(qid)).catch(() => undefined);
   if (cached !== undefined) return cached;
   const logo = await fetchLogo(qid, fetchImpl).catch(() => undefined);
