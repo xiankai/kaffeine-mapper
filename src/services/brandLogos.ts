@@ -6,7 +6,7 @@ const WEBSITE_PROPERTY = "P856";
 const LOGO_PROPERTY = "P154";
 const DRAWN_LOGO = /\.(svg|png)$/i;
 
-export const logoKey = (qid: string) => `kaffeine:logo2:${qid}`;
+export const logoKey = (qid: string) => `kaffeine:logo3:${qid}`;
 
 export const commonsThumb = (file: string) =>
   `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=64`;
@@ -30,17 +30,26 @@ interface EntitiesResponse {
   entities?: Record<string, Entity>;
 }
 
-function claimValue(claims: Claim[] = []): string | undefined {
+const SITE_ROOT = /^\/([a-z]{2}(-[a-z]{2})?\/?)?$/i;
+
+function claimValues(claims: Claim[] = []): string[] {
   const usable = claims.filter((c) => c.rank !== "deprecated");
-  const chosen = usable.find((c) => c.rank === "preferred") ?? usable[0];
-  const value = chosen?.mainsnak?.datavalue?.value;
-  return typeof value === "string" ? value : undefined;
+  const ordered = [
+    ...usable.filter((c) => c.rank === "preferred"),
+    ...usable.filter((c) => c.rank !== "preferred"),
+  ];
+  return ordered
+    .map((c) => c.mainsnak?.datavalue?.value)
+    .filter((v): v is string => typeof v === "string");
 }
 
-function websiteFavicon(website: string | undefined): string | undefined {
-  if (!website) return undefined;
+const claimValue = (claims?: Claim[]) => claimValues(claims)[0];
+
+function ownSiteFavicon(website: string): string | undefined {
   try {
-    return faviconUrl(website);
+    return SITE_ROOT.test(new URL(website).pathname)
+      ? faviconUrl(website)
+      : undefined;
   } catch {
     return undefined;
   }
@@ -49,7 +58,9 @@ function websiteFavicon(website: string | undefined): string | undefined {
 function markerImage(claims: Record<string, Claim[]>): string | null {
   const icon = claimValue(claims[ICON_PROPERTY]);
   if (icon) return commonsThumb(icon);
-  const favicon = websiteFavicon(claimValue(claims[WEBSITE_PROPERTY]));
+  const favicon = claimValues(claims[WEBSITE_PROPERTY])
+    .map(ownSiteFavicon)
+    .find(Boolean);
   if (favicon) return favicon;
   const logo = claimValue(claims[LOGO_PROPERTY]);
   return logo && DRAWN_LOGO.test(logo) ? commonsThumb(logo) : null;
