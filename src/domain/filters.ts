@@ -1,3 +1,4 @@
+import { withinArea } from "./area";
 import {
   displayName,
   isBookmarked,
@@ -7,6 +8,7 @@ import {
   scheduleOf,
 } from "./insights";
 import { isOpenAt, weekendOpenShare } from "./openingHours";
+import { Point } from "./osm";
 import {
   Score,
   ScoreContext,
@@ -30,6 +32,7 @@ export interface Filters {
   independent: boolean;
   query: string;
   sort: SortKey;
+  area?: Point | undefined;
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -117,6 +120,7 @@ export function rankPlaces(
     .filter(
       (p) =>
         p.located &&
+        withinArea(p, filters.area) &&
         matchesStatus(p, filters.status) &&
         matchesReview(p, filters.review) &&
         matchesHours(p, filters) &&

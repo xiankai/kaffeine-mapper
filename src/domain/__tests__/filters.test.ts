@@ -91,6 +91,13 @@ describe("rankPlaces", () => {
     expect(run(all, { independent: true })).toEqual(["cafe"]);
   });
 
+  it("keeps only places within the chosen area", () => {
+    const tokyo = place({ id: "tokyo", lat: 35.68, lng: 139.76 });
+    const places = [...all, { ...tokyo, review: "cafe" as const }];
+    expect(run(places, { area: { lat: 35.7, lng: 139.7 } })).toEqual(["tokyo"]);
+    expect(run(places, { area: undefined })).toHaveLength(4);
+  });
+
   it("searches names and lists", () => {
     expect(run(all, { query: "gam" })).toEqual(["both"]);
     expect(run(all, { query: "laptop" }).sort()).toEqual(["both", "saved"]);
