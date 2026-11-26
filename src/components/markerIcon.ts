@@ -23,7 +23,7 @@ function content(spec: MarkerSpec): string {
     case "initials":
       return escapeHtml(spec.initials);
     case "logo":
-      return `${escapeHtml(spec.initials)}<img src="${escapeHtml(spec.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+      return `<img src="${escapeHtml(spec.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="map-marker-fallback">${escapeHtml(spec.initials)}</span>`;
   }
 }
 

@@ -20,7 +20,7 @@ describe("markerHtml", () => {
     ).toContain(">&lt;B&gt;</span>");
   });
 
-  it("puts the logo over the initials and escapes its URL", () => {
+  it("draws the bare logo with the initials as a fallback, escaping its URL", () => {
     const html = markerHtml({
       ...base,
       kind: "logo",
@@ -28,7 +28,10 @@ describe("markerHtml", () => {
       logo: 'https://x/a.png?w=64&"q"',
     });
     expect(html).toContain(
-      'SB<img src="https://x/a.png?w=64&amp;&quot;q&quot;" alt=""',
+      '<img src="https://x/a.png?w=64&amp;&quot;q&quot;" alt=""',
+    );
+    expect(html).toContain(
+      '<span class="map-marker-fallback">SB</span></span>',
     );
   });
 
