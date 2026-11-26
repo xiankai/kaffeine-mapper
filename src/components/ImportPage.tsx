@@ -1,5 +1,5 @@
 import { ChangeEvent, ReactNode, useEffect, useState } from "react";
-import { GOOGLE_CLIENT_ID } from "../config";
+import { GOOGLE_CLIENT_ID, GOOGLE_MAPS_API_KEY } from "../config";
 import { AccessToken, DownloadBlockedError } from "../dataPortability";
 import { parseSavedCsv, parseStarredGeoJson } from "../domain/bookmarks";
 import { MergeSummary } from "../domain/merge";
@@ -16,6 +16,7 @@ import { TaskStatus, useEnrichment } from "../state/enrichment";
 import { useStore } from "../state/store";
 import { EnrichmentStatus } from "./EnrichmentStatus";
 import { GetDataGuide } from "./GetDataGuide";
+import { GoogleClassify } from "./GoogleClassify";
 import { GooglePull } from "./GooglePull";
 import { SharedPlaces } from "./SharedPlaces";
 
@@ -263,6 +264,17 @@ function useImportActions() {
   };
 }
 
+function PrivacyNote() {
+  return (
+    <p className="muted">
+      Everything stays in this browser. Coordinates and place names go to
+      OpenStreetMap for matching.
+      {GOOGLE_MAPS_API_KEY &&
+        " Google is used for place lookups and only receives place IDs."}
+    </p>
+  );
+}
+
 function useSharedInbox(onShared: (items: SharedItems) => void) {
   const [handler] = useState(() => onShared);
   useEffect(() => {
@@ -297,10 +309,7 @@ export function ImportPage() {
   return (
     <div className="import">
       <h1>Import</h1>
-      <p className="muted">
-        Everything stays in this browser. Only coordinates and place names go to
-        OpenStreetMap for matching.
-      </p>
+      <PrivacyNote />
       <SharedPlaces ids={sharedIds} />
       <GetDataGuide />
       <Step
@@ -352,6 +361,7 @@ export function ImportPage() {
         </button>
         <EnrichmentStatus />
       </Step>
+      <GoogleClassify apiKey={GOOGLE_MAPS_API_KEY} />
       <BackupStep dataset={dataset} busy={busy} onRestore={restore} />
       {status.kind !== "idle" && (
         <p role="status" className={`status ${status.kind}`}>

@@ -1,7 +1,7 @@
 export type PlaceSource = "timeline" | "saved" | "starred" | "manual";
 
 export type Review = "pending" | "cafe" | "not-cafe";
-export type ReviewBy = "auto" | "owner";
+export type ReviewBy = "auto" | "google" | "owner";
 
 export type DayPart = "morning" | "afternoon" | "evening";
 export type DayKind = "weekday" | "weekend";
@@ -87,6 +87,7 @@ export interface Place {
   evaluations?: Evaluation[];
   googleRating?: number;
   googleNote?: string;
+  googleCheckedAt?: string;
 }
 
 export interface Assessed {

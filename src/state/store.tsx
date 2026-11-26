@@ -23,7 +23,12 @@ import {
   Preferences,
   ScoreContext,
 } from "../domain/scoring";
-import { decideMany, triageDataset } from "../domain/triage";
+import {
+  applyGoogleTypes,
+  decideMany,
+  GoogleTypeResult,
+  triageDataset,
+} from "../domain/triage";
 import {
   ChainDefaults,
   Dataset,
@@ -66,6 +71,7 @@ export interface Store {
   importPlaces: (places: Place[]) => MergeSummary;
   applyEnriched: (places: Place[]) => void;
   applyOsm: (places: Place[]) => void;
+  applyGoogle: (results: GoogleTypeResult[]) => void;
   editPlace: (id: string, change: (p: Place) => Place) => void;
   decidePlaces: (ids: string[], review: Review) => void;
   editChain: (
@@ -129,6 +135,19 @@ function useLoadPersisted(
   }, [initial, datasetRef, dispatch]);
 }
 
+function useApplyGoogle(
+  datasetRef: RefObject<Dataset>,
+  commit: (dataset: Dataset) => void,
+) {
+  return useCallback(
+    (results: GoogleTypeResult[]) =>
+      commit(
+        applyGoogleTypes(datasetRef.current, results, new Date().toISOString()),
+      ),
+    [datasetRef, commit],
+  );
+}
+
 export function StoreProvider({
   children,
   initial,
@@ -170,6 +189,8 @@ export function StoreProvider({
     (places: Place[]) => commit(mergeOsm(datasetRef.current, places)),
     [commit],
   );
+
+  const applyGoogle = useApplyGoogle(datasetRef, commit);
 
   const editPlace = useCallback(
     (id: string, change: (p: Place) => Place) =>
@@ -213,6 +234,7 @@ export function StoreProvider({
       importPlaces,
       applyEnriched,
       applyOsm,
+      applyGoogle,
       editPlace,
       decidePlaces,
       editChain,
@@ -225,6 +247,7 @@ export function StoreProvider({
       importPlaces,
       applyEnriched,
       applyOsm,
+      applyGoogle,
       editPlace,
       decidePlaces,
       editChain,

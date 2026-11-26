@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { GOOGLE_MAPS_API_KEY } from "../config";
 import { chainKey } from "../domain/chains";
 import {
   confirmedAt,
@@ -30,6 +31,7 @@ import { useCheckIn } from "../hooks/useCheckIn";
 import { useStore } from "../state/store";
 import { AttributeEditor } from "./AttributeEditor";
 import { CheckInOutcome } from "./EvaluationSheet";
+import { GooglePlaceCard } from "./GooglePlaceCard";
 import { scoreClass } from "./scoreClass";
 import { VisitHeatmap } from "./VisitHeatmap";
 
@@ -110,6 +112,18 @@ function PlaceHeader({
   );
 }
 
+function GoogleSection({ place }: { place: Place }) {
+  const mapsUrl = googleMapsUrl(place);
+  if (!GOOGLE_MAPS_API_KEY || !place.googlePlaceId || !mapsUrl) return null;
+  return (
+    <GooglePlaceCard
+      apiKey={GOOGLE_MAPS_API_KEY}
+      placeId={place.googlePlaceId}
+      mapsUrl={mapsUrl}
+    />
+  );
+}
+
 function ReviewButtons({
   review,
   onChange,
@@ -134,12 +148,24 @@ function ReviewButtons({
   );
 }
 
-function AutoReviewNotice({ onUndo }: { onUndo: () => void }) {
+function autoReviewText(place: Place): string {
+  if (place.reviewBy === "auto")
+    return "Auto-confirmed as a café: a close OpenStreetMap match and a long visit.";
+  return place.review === "cafe"
+    ? "Auto-confirmed as a café: Google lists it as a café."
+    : "Marked not a café: Google lists it as something else.";
+}
+
+function AutoReviewNotice({
+  place,
+  onUndo,
+}: {
+  place: Place;
+  onUndo: () => void;
+}) {
   return (
     <section aria-label="Auto-confirmed" className="auto-review">
-      <span className="muted">
-        Auto-confirmed as a café: a close OpenStreetMap match and a long visit.
-      </span>
+      <span className="muted">{autoReviewText(place)}</span>
       <button type="button" onClick={onUndo}>
         Undo
       </button>
@@ -360,8 +386,8 @@ function ReviewSection({
   }
   return (
     <>
-      {place.reviewBy === "auto" && (
-        <AutoReviewNotice onUndo={() => decide("pending")} />
+      {(place.reviewBy === "auto" || place.reviewBy === "google") && (
+        <AutoReviewNotice place={place} onUndo={() => decide("pending")} />
       )}
       <ReviewButtons review={place.review} onChange={decide} />
     </>
@@ -394,6 +420,7 @@ export function PlaceDetail() {
         score={score}
         chain={isChain(place, scoreContext.chainCounts)}
       />
+      <GoogleSection place={place} />
       <section className="checkin" aria-label="Check in">
         <button type="button" onClick={() => checkIn.checkIn(place.id)}>
           📍 I&apos;m here
