@@ -180,7 +180,7 @@ describe("ExplorePage chain grouping", () => {
     await userEvent.click(screen.getByRole("button", { name: "Group chains" }));
     const row = screen.getByText("Doutor ×2").closest("li") as HTMLElement;
     expect(within(row).getByTitle("Best branch score")).toHaveTextContent("67");
-    expect(within(row).getByText("2 branches in this area")).toBeVisible();
+    expect(within(row).getByText("2 matching branches")).toBeVisible();
     expect(screen.getByText("Kiln")).toBeInTheDocument();
     await userEvent.click(
       within(row).getByRole("button", { name: "Mark all 2 as not cafés" }),

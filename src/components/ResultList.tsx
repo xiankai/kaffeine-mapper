@@ -47,7 +47,7 @@ function ChainRow({
             <strong>
               {entry.label} ×{count}
             </strong>
-            <span className="meta">{count} branches in this area</span>
+            <span className="meta">{count} matching branches</span>
           </span>
         </summary>
         <div className="chain-actions">

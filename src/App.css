@@ -266,7 +266,7 @@ fieldset {
   border-color: var(--accent);
 }
 
-.chain-row details[open] > summary {
+.chain-row > details[open] > summary {
   margin-bottom: 0.5rem;
 }
 

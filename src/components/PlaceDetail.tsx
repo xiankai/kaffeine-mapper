@@ -421,7 +421,7 @@ export function PlaceDetail() {
         />
         {key && (
           <ChainDefaultsSection
-            name={chainName(place) as string}
+            name={chainName(place) ?? key}
             defaults={defaults ?? { manual: {} }}
             onChange={(manual) =>
               editChain(key, (d) => editManual(d, manual, new Date()))
