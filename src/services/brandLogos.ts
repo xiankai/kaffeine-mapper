@@ -1,12 +1,18 @@
 import { get, set } from "idb-keyval";
 
 const API = "https://www.wikidata.org/w/api.php";
+const ICON_PROPERTY = "P8972";
+const WEBSITE_PROPERTY = "P856";
 const LOGO_PROPERTY = "P154";
+const DRAWN_LOGO = /\.(svg|png)$/i;
 
-export const logoKey = (qid: string) => `kaffeine:logo:${qid}`;
+export const logoKey = (qid: string) => `kaffeine:logo2:${qid}`;
 
 export const commonsThumb = (file: string) =>
   `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=64`;
+
+export const faviconUrl = (website: string) =>
+  `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(new URL(website).hostname)}`;
 
 interface Claim {
   rank?: string;
@@ -23,11 +29,29 @@ interface EntitiesResponse {
   entities?: Record<string, Entity>;
 }
 
-function logoClaim(claims: Claim[]): string | null {
+function claimValue(claims: Claim[] = []): string | undefined {
   const usable = claims.filter((c) => c.rank !== "deprecated");
   const chosen = usable.find((c) => c.rank === "preferred") ?? usable[0];
-  const file = chosen?.mainsnak?.datavalue?.value;
-  return typeof file === "string" ? commonsThumb(file) : null;
+  const value = chosen?.mainsnak?.datavalue?.value;
+  return typeof value === "string" ? value : undefined;
+}
+
+function websiteFavicon(website: string | undefined): string | undefined {
+  if (!website) return undefined;
+  try {
+    return faviconUrl(website);
+  } catch {
+    return undefined;
+  }
+}
+
+function markerImage(claims: Record<string, Claim[]>): string | null {
+  const icon = claimValue(claims[ICON_PROPERTY]);
+  if (icon) return commonsThumb(icon);
+  const favicon = websiteFavicon(claimValue(claims[WEBSITE_PROPERTY]));
+  if (favicon) return favicon;
+  const logo = claimValue(claims[LOGO_PROPERTY]);
+  return logo && DRAWN_LOGO.test(logo) ? commonsThumb(logo) : null;
 }
 
 export function logoFromResponse(body: EntitiesResponse): string | null {
@@ -36,7 +60,7 @@ export function logoFromResponse(body: EntitiesResponse): string | null {
     throw new Error("Unexpected Wikidata reply");
   const entity = Object.values(body.entities)[0];
   if (!entity || entity.missing !== undefined) return null;
-  return logoClaim(entity.claims?.[LOGO_PROPERTY] ?? []);
+  return markerImage(entity.claims ?? {});
 }
 
 export function entityUrl(qid: string): string {

@@ -2,6 +2,7 @@ import { get, set } from "idb-keyval";
 import {
   commonsThumb,
   entityUrl,
+  faviconUrl,
   loadLogo,
   logoFromResponse,
   logoKey,
@@ -42,6 +43,33 @@ describe("logoFromResponse", () => {
     expect(commonsThumb("Best logo.svg")).toBe(
       "https://commons.wikimedia.org/wiki/Special:FilePath/Best%20logo.svg?width=64",
     );
+  });
+
+  it("prefers the square icon, then the website's favicon, over the logo", () => {
+    const withClaims = (claims: Record<string, unknown[]>) =>
+      ({ entities: { Q37158: { claims } } }) as never;
+    const logo = [claim("Wordmark.png")];
+    const site = [claim("https://www.starbucks.co.jp/en/")];
+    expect(
+      logoFromResponse(
+        withClaims({ P8972: [claim("Icon.svg")], P856: site, P154: logo }),
+      ),
+    ).toBe(commonsThumb("Icon.svg"));
+    expect(logoFromResponse(withClaims({ P856: site, P154: logo }))).toBe(
+      faviconUrl("https://www.starbucks.co.jp/en/"),
+    );
+    expect(faviconUrl("https://www.starbucks.co.jp/en/")).toBe(
+      "https://www.google.com/s2/favicons?sz=64&domain=www.starbucks.co.jp",
+    );
+    expect(
+      logoFromResponse(withClaims({ P856: [claim("not a url")], P154: logo })),
+    ).toBe(commonsThumb("Wordmark.png"));
+  });
+
+  it("skips logos that are photos rather than drawings", () => {
+    expect(
+      logoFromResponse(entity([claim("Shop front.jpg")]) as never),
+    ).toBeNull();
   });
 
   it("reports no logo for missing entities or claims", () => {
