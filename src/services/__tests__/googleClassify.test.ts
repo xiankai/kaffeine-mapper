@@ -112,6 +112,17 @@ describe("lookup errors", () => {
     expect(isSkippable(new Error("INVALID_REQUEST: bad id"))).toBe(true);
     expect(isSkippable(coded("PERMISSION_DENIED"))).toBe(false);
     expect(isSkippable("boom")).toBe(false);
+    expect(
+      isSkippable(
+        Object.assign(new Error("API key not valid"), {
+          code: "INVALID_ARGUMENT",
+        }),
+      ),
+    ).toBe(false);
+    expect(isSkippable(coded("INVALID_ARGUMENT"))).toBe(true);
+    expect(
+      describeLookupError(new Error("INVALID_ARGUMENT: API key not valid")),
+    ).toMatch(/refused/);
   });
 
   it("explains why a run stopped", () => {

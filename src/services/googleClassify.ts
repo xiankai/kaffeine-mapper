@@ -7,7 +7,8 @@ export const BATCH_SIZE = 10;
 
 const SKIPPABLE = /NOT_FOUND|INVALID_ARGUMENT|INVALID_REQUEST/;
 const QUOTA = /RESOURCE_EXHAUSTED|OVER_QUERY_LIMIT|quota/i;
-const DENIED = /PERMISSION_DENIED|REQUEST_DENIED|UNAUTHENTICATED|denied/i;
+const DENIED =
+  /PERMISSION_DENIED|REQUEST_DENIED|UNAUTHENTICATED|denied|API key|referer|referrer/i;
 
 export interface ClassifyOptions {
   lookup: (placeId: string) => Promise<string[]>;
@@ -23,8 +24,11 @@ function errorDetail(error: unknown): string {
   return typeof code === "string" ? `${code} ${message}` : message;
 }
 
-export const isSkippable = (error: unknown): boolean =>
-  SKIPPABLE.test(errorDetail(error));
+export function isSkippable(error: unknown): boolean {
+  const detail = errorDetail(error);
+  if (QUOTA.test(detail) || DENIED.test(detail)) return false;
+  return SKIPPABLE.test(detail);
+}
 
 export function describeLookupError(error: unknown): string {
   const detail = errorDetail(error);
