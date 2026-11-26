@@ -1,7 +1,7 @@
 import { MarkerSpec } from "../domain/markers";
 
-export const BADGE_SIZE = 28;
-export const DOT_SIZE = 12;
+export const BADGE_SIZE = 20;
+export const DOT_SIZE = 10;
 
 const ENTITIES: Record<string, string> = {
   "&": "&amp;",

@@ -66,6 +66,51 @@ describe("logoFromResponse", () => {
     ).toBe(commonsThumb("Wordmark.png"));
   });
 
+  it("only uses a favicon when the chain has a site of its own", () => {
+    const withClaims = (claims: Record<string, unknown[]>) =>
+      ({ entities: { Q1: { claims } } }) as never;
+    expect(
+      logoFromResponse(
+        withClaims({
+          P856: [claim("https://c-united.co.jp/veloce/")],
+          P154: [claim("CAFFE-VELOCE logo.png")],
+        }),
+      ),
+    ).toBe(commonsThumb("CAFFE-VELOCE logo.png"));
+    expect(
+      logoFromResponse(
+        withClaims({
+          P856: [claim("https://www.saint-marc-hd.com/saintmarccafe/")],
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      logoFromResponse(
+        withClaims({
+          P856: [
+            claim("https://www.doutor.co.jp/exc/"),
+            claim("http://www.excelsiorcaffe.com"),
+          ],
+        }),
+      ),
+    ).toBe(faviconUrl("http://www.excelsiorcaffe.com"));
+    expect(
+      logoFromResponse(
+        withClaims({ P856: [claim("https://www.doutor.co.jp/en/")] }),
+      ),
+    ).toBe(faviconUrl("https://www.doutor.co.jp/"));
+    expect(
+      logoFromResponse(
+        withClaims({
+          P856: [
+            claim("https://other.example/"),
+            claim("https://brand.example/", "preferred"),
+          ],
+        }),
+      ),
+    ).toBe(faviconUrl("https://brand.example/"));
+  });
+
   it("skips logos that are photos rather than drawings", () => {
     expect(
       logoFromResponse(entity([claim("Shop front.jpg")]) as never),

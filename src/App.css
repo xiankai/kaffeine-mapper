@@ -274,15 +274,15 @@ fieldset {
   position: absolute;
   right: -1px;
   bottom: -1px;
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--ring);
   box-shadow: 0 0 0 1.5px #fff;
 }
 
 .map-marker-cafe {
-  font-size: 18px;
+  font-size: 14px;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 40%));
 }
 
@@ -299,8 +299,9 @@ fieldset {
 
 .map-marker-initials,
 .map-marker-fallback {
-  padding: 3px 4px;
-  border-radius: 4px;
+  padding: 2px 3px;
+  border-radius: 3px;
+  font-size: 9px;
   background: rgb(255 255 255 / 85%);
   box-shadow: 0 1px 2px rgb(0 0 0 / 30%);
 }
