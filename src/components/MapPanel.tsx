@@ -14,11 +14,21 @@ import {
 import { chainKey } from "../domain/chains";
 import { Place } from "../domain/types";
 import { useBrandLogos } from "../hooks/useBrandLogos";
-import { markerHtml, markerSize } from "./markerIcon";
+import { hideBrokenLogo, markerHtml, markerSize } from "./markerIcon";
 import { SCORE_COLORS, scoreClass } from "./scoreClass";
 import "leaflet/dist/leaflet.css";
 
 const MAX_MARKERS = 1500;
+
+function BrokenLogoFallback() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    container.addEventListener("error", hideBrokenLogo, true);
+    return () => container.removeEventListener("error", hideBrokenLogo, true);
+  }, [map]);
+  return null;
+}
 
 function FitBounds({ points }: { points: Array<[number, number]> }) {
   const map = useMap();
@@ -82,6 +92,7 @@ export default function MapPanel({ ranked, places, chainCounts }: Props) {
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBounds points={points} />
+        <BrokenLogoFallback />
         {shown.map(({ place, score }) => (
           <Marker
             key={place.id}

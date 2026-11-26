@@ -39,5 +39,11 @@ export function markerHtml(spec: MarkerSpec): string {
   return `<span class="${markerClass(spec)}" style="--ring:${escapeHtml(spec.ring)}">${content(spec)}</span>`;
 }
 
+export function hideBrokenLogo(event: Event): void {
+  const target = event.target;
+  if (target instanceof HTMLImageElement && target.closest(".map-marker-logo"))
+    target.hidden = true;
+}
+
 export const markerSize = (spec: MarkerSpec): number =>
   spec.kind === "dot" ? DOT_SIZE : BADGE_SIZE;

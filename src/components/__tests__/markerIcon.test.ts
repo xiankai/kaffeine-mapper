@@ -1,4 +1,9 @@
-import { escapeHtml, markerHtml, markerSize } from "../markerIcon";
+import {
+  escapeHtml,
+  hideBrokenLogo,
+  markerHtml,
+  markerSize,
+} from "../markerIcon";
 
 describe("markerHtml", () => {
   const base = { ring: "#2f8f5b", visited: true };
@@ -32,5 +37,18 @@ describe("markerHtml", () => {
       markerSize({ ...base, kind: "cafe" }),
     );
     expect(escapeHtml(`'`)).toBe("&#39;");
+  });
+});
+
+describe("hideBrokenLogo", () => {
+  it("hides a logo that failed so the initials show, and nothing else", () => {
+    const host = document.createElement("div");
+    host.innerHTML = `${markerHtml({ ring: "#000", visited: true, kind: "logo", initials: "SB", logo: "x.png" })}<img class="other">`;
+    const [logo, other] = [...host.querySelectorAll("img")];
+    hideBrokenLogo({ target: logo } as unknown as Event);
+    hideBrokenLogo({ target: other } as unknown as Event);
+    hideBrokenLogo({ target: host } as unknown as Event);
+    expect(logo?.hidden).toBe(true);
+    expect(other?.hidden).toBe(false);
   });
 });
