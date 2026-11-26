@@ -79,6 +79,9 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
     __BUILD_TIME__: JSON.stringify(buildTime),
     __GOOGLE_CLIENT_ID__: JSON.stringify(process.env.GOOGLE_CLIENT_ID ?? ""),
+    __GOOGLE_MAPS_API_KEY__: JSON.stringify(
+      process.env.GOOGLE_MAPS_API_KEY ?? "",
+    ),
   },
 
   server: {

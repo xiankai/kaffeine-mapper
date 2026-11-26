@@ -31,7 +31,7 @@ module.exports = {
     ],
   },
 
-  globals: { __GOOGLE_CLIENT_ID__: "" },
+  globals: { __GOOGLE_CLIENT_ID__: "", __GOOGLE_MAPS_API_KEY__: "" },
 
   // Test file patterns
   testMatch: [

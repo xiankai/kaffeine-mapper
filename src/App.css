@@ -344,6 +344,19 @@ fieldset {
   align-items: center;
 }
 
+.google-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+
+.google-card gmp-place-details-compact {
+  width: 100%;
+  max-width: 500px;
+}
+
 .more {
   width: 100%;
   margin-top: 0.5rem;

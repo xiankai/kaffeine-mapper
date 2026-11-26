@@ -2,7 +2,7 @@
 
 Score the cafés you've been to and the ones you've saved, on what matters for working from a café: power sockets, wi-fi (strength, time limit, fee), opening hours in your time slots, weekends, how easy it is to get a seat, and chain vs independent.
 
-Everything runs in your browser. Your data stays in IndexedDB; only coordinates and place names are sent to OpenStreetMap (Overpass, Nominatim) for matching. No API keys.
+Everything runs in your browser. Your data stays in IndexedDB; coordinates and place names are sent to OpenStreetMap (Overpass, Nominatim) for matching. When a Google Maps API key is configured, Google is also used for place lookups: it gets the place IDs being looked up with the usual request details (your IP address, the site's address and its API key), and the place page loads Google's card live. Nothing Google returns is stored except the café verdict.
 
 ## Use it
 
@@ -32,6 +32,12 @@ Setup, once, in a Google Cloud project:
 On the consent screen, pick 30 or 180 days to allow a fresh pull every 24 hours; a one-time grant needs signing in again for each pull. The export can take a while, and the app resumes waiting for it the next time you pull. If the browser can't download the archive, the page links it so you can save it and import the zip by hand.
 
 The client lives in `src/dataPortability/` with no app imports, so other projects can copy it.
+
+## Look places up on Google
+
+Timeline exports name no places, only Google place IDs. With a Maps API key configured, the Import page offers **Classify N pending places with Google**: it asks Google for each pending place's types (Place Details Essentials) and marks it a café, not a café, or leaves it for review when it's unclear. Only the verdict and the date it was checked are stored; Google's names and types never are. The place page also shows Google's live place card for places with a Google ID.
+
+Setup: enable Places API (New), Places UI Kit and Maps JavaScript API, create a browser key restricted to the app's URL and those APIs, and build with it in `GOOGLE_MAPS_API_KEY`. The Pages deploy reads it from the repository secret of that name. Without it the Google features stay hidden.
 
 ## Develop
 

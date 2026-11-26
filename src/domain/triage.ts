@@ -1,4 +1,5 @@
 import { isCheckin } from "./checkin";
+import { GoogleType } from "./googleTypes";
 import { Dataset, Place, Review } from "./types";
 
 export const AUTO_CAFE_MAX_DISTANCE_M = 25;
@@ -11,9 +12,10 @@ export interface TriageSignals {
   timelineVisits: number;
   longestVisitMin: number;
   onList: boolean;
+  googleType?: GoogleType;
 }
 
-export type TriageVerdict = "cafe" | "short-visit" | "undecided";
+export type TriageVerdict = "cafe" | "not-cafe" | "short-visit" | "undecided";
 
 export function triageSignals(place: Place): TriageSignals {
   const timeline = place.visits.filter((v) => !isCheckin(v));
@@ -45,6 +47,8 @@ function isShortOneOff(signals: TriageSignals): boolean {
 }
 
 export function triageVerdict(signals: TriageSignals): TriageVerdict {
+  if (signals.googleType === "cafe") return "cafe";
+  if (signals.googleType === "not-cafe") return "not-cafe";
   if (isConfidentCafe(signals)) return "cafe";
   if (isShortOneOff(signals)) return "short-visit";
   return "undecided";
@@ -52,6 +56,46 @@ export function triageVerdict(signals: TriageSignals): TriageVerdict {
 
 export const isUndecided = (place: Place): boolean =>
   place.review === "pending" && place.reviewBy === undefined;
+
+export const needsGoogleCheck = (place: Place): boolean =>
+  isUndecided(place) &&
+  place.googlePlaceId !== undefined &&
+  place.googleCheckedAt === undefined;
+
+export function applyGoogleType(
+  place: Place,
+  googleType: GoogleType | undefined,
+  checkedAt: string,
+): Place {
+  const checked = { ...place, googleCheckedAt: checkedAt };
+  if (!isUndecided(place)) return checked;
+  const verdict = triageVerdict({
+    ...triageSignals(place),
+    ...(googleType && { googleType }),
+  });
+  if (verdict !== "cafe" && verdict !== "not-cafe") return checked;
+  return { ...checked, review: verdict, reviewBy: "google" };
+}
+
+export interface GoogleTypeResult {
+  id: string;
+  googleType?: GoogleType;
+}
+
+export function applyGoogleTypes(
+  dataset: Dataset,
+  results: GoogleTypeResult[],
+  checkedAt: string,
+): Dataset {
+  const byId = new Map(results.map((r) => [r.id, r]));
+  return {
+    ...dataset,
+    places: dataset.places.map((p) => {
+      const result = byId.get(p.id);
+      return result ? applyGoogleType(p, result.googleType, checkedAt) : p;
+    }),
+  };
+}
 
 export const isShortVisitOnly = (place: Place): boolean =>
   triageVerdict(triageSignals(place)) === "short-visit";

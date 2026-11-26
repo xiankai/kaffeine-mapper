@@ -51,6 +51,7 @@ jobs:
           NODE_ENV: production
           BASE_PATH: /kaffeine-mapper/
           GOOGLE_CLIENT_ID: 317376787533-6m5jlbbcsbg5je9s0p1ac1ov6niq7b0r.apps.googleusercontent.com
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

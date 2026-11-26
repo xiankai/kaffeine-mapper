@@ -31,7 +31,7 @@ function preferLocated(
 }
 
 function decisionWeight(place: Place): number {
-  if (place.reviewBy === "auto") return 1;
+  if (place.reviewBy === "auto" || place.reviewBy === "google") return 1;
   return place.review !== "pending" || place.reviewBy === "owner" ? 2 : 0;
 }
 
