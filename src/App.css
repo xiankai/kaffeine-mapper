@@ -117,6 +117,16 @@ fieldset {
   border-radius: 999px;
 }
 
+.area-picker {
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.area-note {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
 .open-at {
   display: flex;
   gap: 0.35rem;

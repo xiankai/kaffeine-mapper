@@ -1,7 +1,9 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { DEFAULT_FILTERS, Filters, rankPlaces } from "../domain/filters";
+import { useArea } from "../hooks/useArea";
 import { useStore } from "../state/store";
+import { AreaPicker } from "./AreaPicker";
 import { FilterBar } from "./FilterBar";
 import { PlaceCard } from "./PlaceCard";
 
@@ -13,9 +15,15 @@ export function ExplorePage() {
   const { dataset, scoreContext } = useStore();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [shown, setShown] = useState(PAGE_SIZE);
+  const area = useArea(dataset.places);
   const ranked = useMemo(
-    () => rankPlaces(dataset.places, filters, scoreContext),
-    [dataset.places, filters, scoreContext],
+    () =>
+      rankPlaces(
+        dataset.places,
+        { ...filters, area: area.center },
+        scoreContext,
+      ),
+    [dataset.places, filters, area.center, scoreContext],
   );
 
   if (dataset.places.length === 0) {
@@ -29,6 +37,11 @@ export function ExplorePage() {
 
   return (
     <div className="explore">
+      <AreaPicker
+        mode={area.mode}
+        status={area.status}
+        onChange={(m) => (area.chooseMode(m), setShown(PAGE_SIZE))}
+      />
       <FilterBar
         filters={filters}
         onChange={(f) => (setFilters(f), setShown(PAGE_SIZE))}
@@ -37,7 +50,10 @@ export function ExplorePage() {
       <div className="explore-body">
         <section className="results" aria-label="Ranked places">
           {ranked.length === 0 && (
-            <p className="empty">Nothing matches these filters.</p>
+            <p className="empty">
+              Nothing matches these filters
+              {area.mode === "everywhere" ? "." : " in this area."}
+            </p>
           )}
           <ol className="cards">
             {ranked.slice(0, shown).map((r) => (
