@@ -28,11 +28,8 @@ function content(spec: MarkerSpec): string {
 }
 
 export function markerClass(spec: MarkerSpec): string {
-  return [
-    "map-marker",
-    `map-marker-${spec.kind}`,
-    spec.visited ? "map-marker-visited" : "map-marker-saved",
-  ].join(" ");
+  const kind = `map-marker map-marker-${spec.kind}`;
+  return spec.visited ? kind : `${kind} map-marker-saved`;
 }
 
 export function markerHtml(spec: MarkerSpec): string {

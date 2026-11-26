@@ -10,7 +10,7 @@ describe("markerHtml", () => {
 
   it("renders each kind with the score ring and visit state", () => {
     expect(markerHtml({ ...base, kind: "dot" })).toBe(
-      '<span class="map-marker map-marker-dot map-marker-visited" style="--ring:#2f8f5b"></span>',
+      '<span class="map-marker map-marker-dot" style="--ring:#2f8f5b"></span>',
     );
     expect(markerHtml({ ...base, visited: false, kind: "cafe" })).toContain(
       'map-marker-saved" style="--ring:#2f8f5b">☕</span>',
