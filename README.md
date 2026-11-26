@@ -2,7 +2,7 @@
 
 Score the cafés you've been to and the ones you've saved, on what matters for working from a café: power sockets, wi-fi (strength, time limit, fee), opening hours in your time slots, weekends, how easy it is to get a seat, and chain vs independent.
 
-Everything runs in your browser. Your data stays in IndexedDB; coordinates and place names are sent to OpenStreetMap (Overpass, Nominatim) for matching. When a Google Maps API key is configured, Google is also used for place lookups, and it only receives Google place IDs.
+Everything runs in your browser. Your data stays in IndexedDB; coordinates and place names are sent to OpenStreetMap (Overpass, Nominatim) for matching. When a Google Maps API key is configured, Google is also used for place lookups: it receives Google place IDs along with the usual request details (your IP address and the site's address), and nothing it returns is stored except the café verdict.
 
 ## Use it
 
