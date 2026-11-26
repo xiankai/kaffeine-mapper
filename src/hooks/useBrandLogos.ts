@@ -21,6 +21,7 @@ export function useBrandLogos(qids: string[]): Logos {
         setLogos((prev) => ({ ...prev, [qid]: logo }));
       });
     }
+    // stack-reviewer-ignore: a failed lookup (offline, 5xx) is deliberately retried only on the next change of the visible chain set or the next page load, never in a loop; the initials badge covers the gap
   }, [wanted]);
   return logos;
 }
