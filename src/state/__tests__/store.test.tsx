@@ -13,7 +13,7 @@ import {
   saveDataset,
   savePreferences,
 } from "../../services/storage";
-import { replacePlaces, StoreProvider, useStore } from "../store";
+import { mergeOsm, replacePlaces, StoreProvider, useStore } from "../store";
 
 jest.mock("../../services/storage", () => ({
   loadPersisted: jest.fn(),
@@ -97,5 +97,67 @@ describe("replacePlaces", () => {
       [place({ id: "b", name: "B" })],
     );
     expect(out.places.map((p) => p.name)).toEqual([undefined, "B"]);
+  });
+});
+
+describe("auto-triage in the store", () => {
+  const confident = (id: string) =>
+    place({ id, osm: osm({}, `node/${id}`), visits: [visit("1", 60)] });
+
+  it("auto-confirms confident places on load", async () => {
+    (loadPersisted as jest.Mock).mockResolvedValue({
+      ...initial,
+      dataset: { version: 1, places: [confident("g:c")] },
+    });
+    function Probe() {
+      const { dataset } = useStore();
+      return <p>{dataset.places[0]?.reviewBy ?? "none"}</p>;
+    }
+    render(
+      <StoreProvider>
+        <Probe />
+      </StoreProvider>,
+    );
+    expect(await screen.findByText("auto")).toBeInTheDocument();
+  });
+
+  it("auto-confirms after enrichment and import", () => {
+    const pending = place({ id: "g:c", visits: [visit("1", 60)] });
+    const merged = mergeOsm({ version: 1, places: [pending] }, [
+      confident("g:c"),
+    ]);
+    expect(merged.places[0]).toMatchObject({
+      review: "cafe",
+      reviewBy: "auto",
+    });
+    const { result } = renderHook(() => useStore(), { wrapper });
+    act(() => {
+      result.current.importPlaces([confident("g:new")]);
+    });
+    expect(
+      result.current.dataset.places.find((p) => p.id === "g:new")?.reviewBy,
+    ).toBe("auto");
+  });
+
+  it("decides many places at once and keeps chain defaults", () => {
+    const { result } = renderHook(() => useStore(), { wrapper });
+    act(() => result.current.decidePlaces(["g:a"], "not-cafe"));
+    expect(result.current.dataset.places[0]).toMatchObject({
+      review: "not-cafe",
+      reviewBy: "owner",
+    });
+    expect(result.current.scoreContext.chains).toBeUndefined();
+    act(() =>
+      result.current.editChain("doutor", (d) => ({
+        ...d,
+        manual: { wifi: "ok" },
+      })),
+    );
+    expect(result.current.dataset.chains).toEqual({
+      doutor: { manual: { wifi: "ok" } },
+    });
+    expect(result.current.scoreContext.chains).toBe(
+      result.current.dataset.chains,
+    );
   });
 });

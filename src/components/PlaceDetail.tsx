@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { chainKey } from "../domain/chains";
 import {
   confirmedAt,
   editManual,
@@ -7,6 +8,7 @@ import {
   relativeDate,
 } from "../domain/evaluations";
 import {
+  chainName,
   displayName,
   findPlace,
   isChain,
@@ -15,8 +17,15 @@ import {
 } from "../domain/insights";
 import { WeekSchedule } from "../domain/openingHours";
 import { METRIC_LABELS, METRICS, Score, scorePlace } from "../domain/scoring";
-import { ManualAttributes, OsmMatch, Place, Review } from "../domain/types";
+import {
+  Assessed,
+  ManualAttributes,
+  OsmMatch,
+  Place,
+  Review,
+} from "../domain/types";
 import { pickCandidate, rejectCandidates } from "../domain/merge";
+import { decideReview } from "../domain/triage";
 import { useCheckIn } from "../hooks/useCheckIn";
 import { useStore } from "../state/store";
 import { AttributeEditor } from "./AttributeEditor";
@@ -121,6 +130,19 @@ function ReviewButtons({
           {label}
         </button>
       ))}
+    </section>
+  );
+}
+
+function AutoReviewNotice({ onUndo }: { onUndo: () => void }) {
+  return (
+    <section aria-label="Auto-confirmed" className="auto-review">
+      <span className="muted">
+        Auto-confirmed as a café: a close OpenStreetMap match and a long visit.
+      </span>
+      <button type="button" onClick={onUndo}>
+        Undo
+      </button>
     </section>
   );
 }
@@ -250,27 +272,57 @@ function WhenYouGo({ place }: { place: Place }) {
   );
 }
 
-function YourNotes({
-  place,
-  onChange,
-}: {
-  place: Place;
-  onChange: (manual: ManualAttributes) => void;
-}) {
-  const [now] = useState(() => new Date());
-  const confirmed = Object.fromEntries(
-    Object.entries(confirmedAt(place)).map(([key, at]) => [
+function confirmedLabels(target: Assessed, now: Date) {
+  return Object.fromEntries(
+    Object.entries(confirmedAt(target)).map(([key, at]) => [
       key,
       relativeDate(at, now),
     ]),
   );
+}
+
+function ChainDefaultsSection({
+  name,
+  defaults,
+  onChange,
+}: {
+  name: string;
+  defaults: Assessed;
+  onChange: (manual: ManualAttributes) => void;
+}) {
+  const [now] = useState(() => new Date());
+  return (
+    <section aria-label="Chain defaults">
+      <h2>Every {name} branch</h2>
+      <p className="muted">Used for any branch that has no value of its own.</p>
+      <AttributeEditor
+        manual={defaults.manual}
+        confirmed={confirmedLabels(defaults, now)}
+        onChange={onChange}
+        chainDefaults
+      />
+    </section>
+  );
+}
+
+function YourNotes({
+  place,
+  fromChain,
+  onChange,
+}: {
+  place: Place;
+  fromChain: ManualAttributes | undefined;
+  onChange: (manual: ManualAttributes) => void;
+}) {
+  const [now] = useState(() => new Date());
   const notes = evaluationNotes(place);
   return (
     <section>
       <h2>Your notes</h2>
       <AttributeEditor
         manual={place.manual}
-        confirmed={confirmed}
+        confirmed={confirmedLabels(place, now)}
+        fromChain={fromChain}
         onChange={onChange}
       />
       {notes.length > 0 && (
@@ -286,9 +338,39 @@ function YourNotes({
   );
 }
 
+function ReviewSection({
+  place,
+  editPlace,
+}: {
+  place: Place;
+  editPlace: (id: string, change: (p: Place) => Place) => void;
+}) {
+  const decide = (review: Review) =>
+    editPlace(place.id, (p) => decideReview(p, review));
+  if (place.osmCandidates?.length) {
+    return (
+      <CandidatePicker
+        candidates={place.osmCandidates}
+        onPick={(chosen) =>
+          editPlace(place.id, (p) => pickCandidate(p, chosen))
+        }
+        onReject={() => editPlace(place.id, rejectCandidates)}
+      />
+    );
+  }
+  return (
+    <>
+      {place.reviewBy === "auto" && (
+        <AutoReviewNotice onUndo={() => decide("pending")} />
+      )}
+      <ReviewButtons review={place.review} onChange={decide} />
+    </>
+  );
+}
+
 export function PlaceDetail() {
   const { id = "" } = useParams();
-  const { dataset, scoreContext, editPlace } = useStore();
+  const { dataset, scoreContext, editPlace, editChain } = useStore();
   const checkIn = useCheckIn();
   const place = findPlace(dataset.places, id);
   if (!place) {
@@ -299,6 +381,8 @@ export function PlaceDetail() {
     );
   }
   const score = scorePlace(place, scoreContext);
+  const key = chainKey(place, scoreContext.chainCounts);
+  const defaults = key ? dataset.chains?.[key] : undefined;
 
   return (
     <article className="detail">
@@ -316,20 +400,7 @@ export function PlaceDetail() {
         </button>
       </section>
       <CheckInOutcome flow={checkIn} />
-      {place.osmCandidates?.length ? (
-        <CandidatePicker
-          candidates={place.osmCandidates}
-          onPick={(chosen) =>
-            editPlace(place.id, (p) => pickCandidate(p, chosen))
-          }
-          onReject={() => editPlace(place.id, rejectCandidates)}
-        />
-      ) : (
-        <ReviewButtons
-          review={place.review}
-          onChange={(review) => editPlace(place.id, (p) => ({ ...p, review }))}
-        />
-      )}
+      <ReviewSection place={place} editPlace={editPlace} />
       <div className="detail-grid">
         <section>
           <ScoreBreakdown
@@ -343,10 +414,20 @@ export function PlaceDetail() {
         </section>
         <YourNotes
           place={place}
+          fromChain={defaults?.manual}
           onChange={(manual) =>
             editPlace(place.id, (p) => editManual(p, manual, new Date()))
           }
         />
+        {key && (
+          <ChainDefaultsSection
+            name={chainName(place) as string}
+            defaults={defaults ?? { manual: {} }}
+            onChange={(manual) =>
+              editChain(key, (d) => editManual(d, manual, new Date()))
+            }
+          />
+        )}
         <section className="span-2">
           <h2>When you go</h2>
           <WhenYouGo place={place} />

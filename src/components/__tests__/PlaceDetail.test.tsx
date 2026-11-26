@@ -205,3 +205,73 @@ describe("PlaceDetail", () => {
     expect(screen.getByText(/Place not found/)).toBeInTheDocument();
   });
 });
+
+describe("PlaceDetail triage and chains", () => {
+  it("says a place was auto-confirmed and lets the owner undo it", () => {
+    show([{ ...full, review: "cafe", reviewBy: "auto" }]);
+    const notice = screen.getByRole("region", { name: "Auto-confirmed" });
+    fireEvent.click(within(notice).getByRole("button", { name: "Undo" }));
+    expect(
+      screen.queryByRole("region", { name: "Auto-confirmed" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unsure" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("labels values inherited from the chain and edits the chain defaults", () => {
+    const branch = place({
+      id: "g:doutor",
+      osm: osm({ name: "Doutor Shinjuku", brand: "Doutor" }, "node/d"),
+      manual: { sockets: "few" },
+    });
+    renderWithStore(<PlaceDetail />, {
+      places: [branch],
+      chains: {
+        doutor: {
+          manual: { wifi: "ok", sockets: "many" },
+          evaluations: [{ at: new Date().toISOString(), wifi: "ok" }],
+        },
+      },
+      path: "/place/:id",
+      route: "/place/g%3Adoutor",
+    });
+    expect(
+      screen.getAllByRole("option", { name: "from chain: ok" }).length,
+    ).toBe(1);
+    expect(
+      screen.getAllByRole("option", { name: "from chain: many" }).length,
+    ).toBe(1);
+    const chain = screen.getByRole("region", { name: "Chain defaults" });
+    expect(
+      within(chain).getByRole("heading", { name: "Every Doutor branch" }),
+    ).toBeInTheDocument();
+    expect(
+      within(chain).queryByRole("combobox", { name: "Chain?" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(chain).queryByRole("textbox", { name: "Notes" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(chain).getByRole("combobox", { name: "Wi-Fi strength" }),
+    ).toHaveAccessibleDescription("confirmed today");
+    fireEvent.change(
+      within(chain).getByRole("combobox", { name: "My rating" }),
+      { target: { value: "4" } },
+    );
+    expect(
+      screen.getAllByRole("option", { name: "from chain: 4" }).length,
+    ).toBe(1);
+  });
+
+  it("offers chain defaults for a chain with none stored yet", () => {
+    show(
+      [place({ id: "g:t", osm: osm({ brand: "Tully's" }, "node/t") })],
+      "g:t",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Every Tully's branch" }),
+    ).toBeInTheDocument();
+  });
+});

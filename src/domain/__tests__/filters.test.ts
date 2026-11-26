@@ -111,3 +111,44 @@ describe("rankPlaces", () => {
     expect(run(all, { sort: "recent" })).toEqual(["both", "cafe", "saved"]);
   });
 });
+
+describe("rankPlaces review queue", () => {
+  const oneShort = place({ id: "short", visits: [visit("2024-01-01", 10)] });
+  const listed = place({
+    id: "listed",
+    lists: ["L"],
+    visits: [visit("2024-01-01", 10)],
+  });
+  const regular = place({
+    id: "regular",
+    visits: [visit("2024-01-01", 20), visit("2024-01-02", 20)],
+  });
+  const decided = place({ id: "decided", review: "cafe" });
+
+  it("leaves short one-off visits out unless asked", () => {
+    const places = [oneShort, listed, regular, decided];
+    expect(run(places, { review: "pending", sort: "visits" })).toEqual([
+      "regular",
+      "listed",
+    ]);
+    expect(
+      run(places, { review: "pending", sort: "visits", shortVisits: true }),
+    ).toEqual(["regular", "short", "listed"]);
+  });
+
+  it("filters amenities on values inherited from the chain", () => {
+    const branch = place({ id: "branch", osm: osm({ brand: "Doutor" }) });
+    const withChains = {
+      ...ctx,
+      chainCounts: new Map([["doutor", 1]]),
+      chains: { doutor: { manual: { sockets: "many" as const } } },
+    };
+    const ids = rankPlaces(
+      [branch],
+      { ...DEFAULT_FILTERS, sockets: true },
+      withChains,
+    ).map((r) => r.place.id);
+    expect(ids).toEqual(["branch"]);
+    expect(run([branch], { sockets: true })).toEqual([]);
+  });
+});

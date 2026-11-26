@@ -21,10 +21,14 @@ export function scheduleOf(place: Place): WeekSchedule | undefined {
   return parseOpeningHours(place.osm?.tags.opening_hours);
 }
 
+export function chainName(place: Place): string | undefined {
+  return place.osm?.tags.brand ?? place.osm?.name ?? place.name;
+}
+
 export function chainNameCounts(places: Place[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const place of places) {
-    const name = place.osm?.tags.brand ?? place.osm?.name ?? place.name;
+    const name = chainName(place);
     if (!name) continue;
     const key = normaliseName(name);
     counts.set(key, (counts.get(key) ?? 0) + 1);

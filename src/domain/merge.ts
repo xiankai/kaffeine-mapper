@@ -30,17 +30,39 @@ function preferLocated(
   return { lat: source.lat, lng: source.lng, located: source.located };
 }
 
+function decisionWeight(place: Place): number {
+  if (place.reviewBy === "auto") return 1;
+  return place.review !== "pending" || place.reviewBy === "owner" ? 2 : 0;
+}
+
+function strongerReview(
+  existing: Place,
+  incoming: Place,
+): Pick<Place, "review" | "reviewBy"> {
+  const source =
+    decisionWeight(incoming) > decisionWeight(existing) ? incoming : existing;
+  return {
+    review: source.review,
+    ...(source.reviewBy && { reviewBy: source.reviewBy }),
+  };
+}
+
+function withoutReviewBy(place: Place): Place {
+  const { reviewBy: _reviewBy, ...rest } = place;
+  return rest;
+}
+
 export function mergePlace(existing: Place, incoming: Place): Place {
   return {
-    ...incoming,
-    ...existing,
+    ...withoutReviewBy(incoming),
+    ...withoutReviewBy(existing),
     ...preferLocated(existing, incoming),
     sources: union(existing.sources, incoming.sources),
     lists: union(existing.lists, incoming.lists),
     visits: mergeVisits(existing.visits, incoming.visits),
     manual: { ...incoming.manual, ...existing.manual },
     ...mergeEvaluations(existing.evaluations, incoming.evaluations),
-    review: existing.review !== "pending" ? existing.review : incoming.review,
+    ...strongerReview(existing, incoming),
   };
 }
 
@@ -143,10 +165,10 @@ export function updatePlace(
 // stack-reviewer-ignore: a pick sets osm, so needsEnrichment's matcher check never fires and enrichment keeps it via confirmedMatch (covered in overpass.test)
 export function pickCandidate(place: Place, chosen: OsmMatch): Place {
   const { osmCandidates: _candidates, ...rest } = place;
-  return { ...rest, osm: chosen, review: "cafe" };
+  return { ...rest, osm: chosen, review: "cafe", reviewBy: "owner" };
 }
 
 export function rejectCandidates(place: Place): Place {
   const { osmCandidates: _candidates, ...rest } = place;
-  return { ...rest, review: "not-cafe" };
+  return { ...rest, review: "not-cafe", reviewBy: "owner" };
 }

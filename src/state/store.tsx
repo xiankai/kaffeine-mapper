@@ -1,6 +1,8 @@
 import {
+  ActionDispatch,
   createContext,
   ReactNode,
+  RefObject,
   use,
   useCallback,
   useEffect,
@@ -8,6 +10,7 @@ import {
   useReducer,
   useRef,
 } from "react";
+import { updateChain } from "../domain/chains";
 import { chainNameCounts } from "../domain/insights";
 import {
   linkByOsm,
@@ -20,7 +23,14 @@ import {
   Preferences,
   ScoreContext,
 } from "../domain/scoring";
-import { Dataset, emptyDataset, Place } from "../domain/types";
+import { decideMany, triageDataset } from "../domain/triage";
+import {
+  ChainDefaults,
+  Dataset,
+  emptyDataset,
+  Place,
+  Review,
+} from "../domain/types";
 import {
   loadPersisted,
   Persisted,
@@ -57,6 +67,11 @@ export interface Store {
   applyEnriched: (places: Place[]) => void;
   applyOsm: (places: Place[]) => void;
   editPlace: (id: string, change: (p: Place) => Place) => void;
+  decidePlaces: (ids: string[], review: Review) => void;
+  editChain: (
+    key: string,
+    change: (defaults: ChainDefaults) => ChainDefaults,
+  ) => void;
   replaceDataset: (dataset: Dataset) => void;
   setPreferences: (preferences: Preferences) => void;
 }
@@ -65,10 +80,12 @@ const StoreContext = createContext<Store | undefined>(undefined);
 
 export function replacePlaces(dataset: Dataset, places: Place[]): Dataset {
   const byId = new Map(places.map((p) => [p.id, p]));
-  return linkByOsm({
-    ...dataset,
-    places: dataset.places.map((p) => byId.get(p.id) ?? p),
-  });
+  return triageDataset(
+    linkByOsm({
+      ...dataset,
+      places: dataset.places.map((p) => byId.get(p.id) ?? p),
+    }),
+  );
 }
 
 function withOsmFrom(current: Place, enriched: Place): Place {
@@ -86,13 +103,30 @@ function withOsmFrom(current: Place, enriched: Place): Place {
 
 export function mergeOsm(dataset: Dataset, enriched: Place[]): Dataset {
   const byId = new Map(enriched.map((p) => [p.id, p]));
-  return linkByOsm({
-    ...dataset,
-    places: dataset.places.map((p) => {
-      const match = byId.get(p.id);
-      return match ? withOsmFrom(p, match) : p;
+  return triageDataset(
+    linkByOsm({
+      ...dataset,
+      places: dataset.places.map((p) => {
+        const match = byId.get(p.id);
+        return match ? withOsmFrom(p, match) : p;
+      }),
     }),
-  });
+  );
+}
+
+function useLoadPersisted(
+  initial: Persisted | undefined,
+  datasetRef: RefObject<Dataset>,
+  dispatch: ActionDispatch<[Action]>,
+) {
+  useEffect(() => {
+    if (initial) return;
+    loadPersisted().then((stored) => {
+      const persisted = { ...stored, dataset: triageDataset(stored.dataset) };
+      datasetRef.current = persisted.dataset;
+      dispatch({ type: "loaded", persisted });
+    });
+  }, [initial, datasetRef, dispatch]);
 }
 
 export function StoreProvider({
@@ -110,14 +144,7 @@ export function StoreProvider({
     ready: initial !== undefined,
   });
   const datasetRef = useRef(state.dataset);
-
-  useEffect(() => {
-    if (initial) return;
-    loadPersisted().then((persisted) => {
-      datasetRef.current = persisted.dataset;
-      dispatch({ type: "loaded", persisted });
-    });
-  }, [initial]);
+  useLoadPersisted(initial, datasetRef, dispatch);
 
   const commit = useCallback((dataset: Dataset) => {
     datasetRef.current = dataset;
@@ -128,7 +155,7 @@ export function StoreProvider({
   const importPlaces = useCallback(
     (places: Place[]) => {
       const summary = mergeIntoDataset(datasetRef.current, places);
-      commit(summary.dataset);
+      commit(triageDataset(summary.dataset));
       return summary;
     },
     [commit],
@@ -151,6 +178,18 @@ export function StoreProvider({
     [commit],
   );
 
+  const decidePlaces = useCallback(
+    (ids: string[], review: Review) =>
+      commit(linkByOsm(decideMany(datasetRef.current, ids, review))),
+    [commit],
+  );
+
+  const editChain = useCallback(
+    (key: string, change: (defaults: ChainDefaults) => ChainDefaults) =>
+      commit(updateChain(datasetRef.current, key, change)),
+    [commit],
+  );
+
   const setPreferences = useCallback((preferences: Preferences) => {
     dispatch({ type: "preferences", preferences });
     savePreferences(preferences).catch(() => undefined);
@@ -160,8 +199,9 @@ export function StoreProvider({
     () => ({
       preferences: state.preferences,
       chainCounts: chainNameCounts(state.dataset.places),
+      ...(state.dataset.chains && { chains: state.dataset.chains }),
     }),
-    [state.preferences, state.dataset.places],
+    [state.preferences, state.dataset.places, state.dataset.chains],
   );
 
   const value = useMemo<Store>(
@@ -174,6 +214,8 @@ export function StoreProvider({
       applyEnriched,
       applyOsm,
       editPlace,
+      decidePlaces,
+      editChain,
       replaceDataset: commit,
       setPreferences,
     }),
@@ -184,6 +226,8 @@ export function StoreProvider({
       applyEnriched,
       applyOsm,
       editPlace,
+      decidePlaces,
+      editChain,
       commit,
       setPreferences,
     ],

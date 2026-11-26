@@ -8,13 +8,14 @@ import {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-type Toggle = "sockets" | "wifi" | "weekend" | "independent";
+type Toggle = "sockets" | "wifi" | "weekend" | "independent" | "groupChains";
 
 const TOGGLES: Array<[Toggle, string]> = [
   ["sockets", "🔌 Sockets"],
   ["wifi", "📶 Wi-Fi"],
   ["weekend", "Open weekends"],
   ["independent", "Independent"],
+  ["groupChains", "Group chains"],
 ];
 
 interface Props {
@@ -89,6 +90,25 @@ function OpenAtPicker({
   );
 }
 
+function ShortVisitsOption({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="short-visits">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      Include short one-off visits
+    </label>
+  );
+}
+
 function withoutOpenAt(filters: Filters): Filters {
   const { openAt: _openAt, ...rest } = filters;
   return rest;
@@ -139,7 +159,9 @@ export function FilterBar({
       <Select<ReviewFilter>
         label="Places"
         value={filters.review}
-        onChange={(review) => set({ review })}
+        onChange={(review) =>
+          set({ review, ...(review === "pending" && { sort: "visits" }) })
+        }
       >
         <option value="likely">Cafés</option>
         <option value="pending">Needs review</option>
@@ -175,6 +197,12 @@ export function FilterBar({
           🕒 Open at…
         </button>
       </fieldset>
+      {filters.review === "pending" && (
+        <ShortVisitsOption
+          checked={filters.shortVisits}
+          onChange={(shortVisits) => set({ shortVisits })}
+        />
+      )}
       {openAt && (
         <OpenAtPicker
           openAt={openAt}

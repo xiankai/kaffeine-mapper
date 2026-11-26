@@ -108,3 +108,30 @@ describe("FilterBar", () => {
     expect(onChange.mock.lastCall[0].openAt.day).toBe(new Date().getDay());
   });
 });
+
+describe("FilterBar review queue", () => {
+  it("sorts the review queue by visits and offers short one-off visits", () => {
+    const onChange = setup();
+    fireEvent.change(screen.getByLabelText("Places"), {
+      target: { value: "pending" },
+    });
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ review: "pending", sort: "visits" }),
+    );
+    expect(
+      screen.queryByLabelText("Include short one-off visits"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("toggles short one-off visits and chain grouping", () => {
+    const onChange = setup({ ...DEFAULT_FILTERS, review: "pending" });
+    fireEvent.click(screen.getByLabelText("Include short one-off visits"));
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ shortVisits: true }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Group chains" }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ groupChains: true }),
+    );
+  });
+});

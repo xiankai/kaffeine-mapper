@@ -1,3 +1,4 @@
+import { Chains, withChainDefaults } from "./chains";
 import { isChain, scheduleOf, slotOf } from "./insights";
 import { openShareInSlot, weekendOpenShare } from "./openingHours";
 import { Place, SeatLevel, Slot, SocketLevel, WifiLevel } from "./types";
@@ -59,6 +60,11 @@ export const DEFAULT_PREFERENCES: Preferences = {
 export interface ScoreContext {
   preferences: Preferences;
   chainCounts: Map<string, number>;
+  chains?: Chains;
+}
+
+export function effectivePlace(place: Place, ctx: ScoreContext): Place {
+  return withChainDefaults(place, ctx.chainCounts, ctx.chains);
 }
 
 export type MetricValues = Partial<Record<Metric, number>>;
@@ -180,7 +186,7 @@ export function metricValues(place: Place, ctx: ScoreContext): MetricValues {
 }
 
 export function scorePlace(place: Place, ctx: ScoreContext): Score {
-  const metrics = metricValues(place, ctx);
+  const metrics = metricValues(effectivePlace(place, ctx), ctx);
   const { weights } = ctx.preferences;
   const totalWeight = METRICS.reduce(
     (sum, m) => sum + Math.max(0, weights[m]),

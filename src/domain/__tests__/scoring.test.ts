@@ -119,3 +119,16 @@ describe("scorePlace", () => {
     expect(scorePlace(place(), ctx({ weights: none })).coverage).toBe(0);
   });
 });
+
+describe("scorePlace with chain defaults", () => {
+  it("scores a branch on the chain's values where it has none", () => {
+    const branch = place({ osm: osm({ brand: "Doutor" }) });
+    const withChains = {
+      ...ctx(),
+      chainCounts: new Map([["doutor", 1]]),
+      chains: { doutor: { manual: { sockets: "many" as const } } },
+    };
+    expect(scorePlace(branch, withChains).metrics.sockets).toBe(1);
+    expect(scorePlace(branch, ctx()).metrics.sockets).toBeUndefined();
+  });
+});

@@ -26,6 +26,8 @@ interface Props {
   manual: ManualAttributes;
   onChange: (manual: ManualAttributes) => void;
   confirmed?: Partial<Record<ConfirmKey, string>>;
+  fromChain?: ManualAttributes | undefined;
+  chainDefaults?: boolean;
 }
 
 function withField<K extends keyof ManualAttributes>(
@@ -43,6 +45,7 @@ function Choice<T extends string>({
   options,
   labels,
   hint,
+  inherited,
   onChange,
 }: {
   label: string;
@@ -50,9 +53,11 @@ function Choice<T extends string>({
   options: readonly T[];
   labels?: Record<T, string>;
   hint?: string | undefined;
+  inherited?: T | undefined;
   onChange: (v: T | undefined) => void;
 }) {
   const hintId = useId();
+  const labelOf = (o: T) => labels?.[o] ?? o;
   return (
     <div className="field">
       <label>
@@ -64,10 +69,12 @@ function Choice<T extends string>({
             onChange((e.target.value || undefined) as T | undefined)
           }
         >
-          <option value="">unknown</option>
+          <option value="">
+            {inherited ? `from chain: ${labelOf(inherited)}` : "unknown"}
+          </option>
           {options.map((o) => (
             <option key={o} value={o}>
-              {labels?.[o] ?? o}
+              {labelOf(o)}
             </option>
           ))}
         </select>
@@ -86,7 +93,30 @@ function chainValue(chain: boolean | undefined) {
   return chain ? "chain" : "independent";
 }
 
-export function AttributeEditor({ manual, onChange, confirmed = {} }: Props) {
+function ChainChoice({
+  chain,
+  onChange,
+}: {
+  chain: boolean | undefined;
+  onChange: (chain: boolean | undefined) => void;
+}) {
+  return (
+    <Choice<"chain" | "independent">
+      label="Chain?"
+      value={chainValue(chain)}
+      options={["chain", "independent"]}
+      onChange={(v) => onChange(v === undefined ? undefined : v === "chain")}
+    />
+  );
+}
+
+export function AttributeEditor({
+  manual,
+  onChange,
+  confirmed = {},
+  fromChain = {},
+  chainDefaults = false,
+}: Props) {
   const set = <K extends keyof ManualAttributes>(
     key: K,
     value: ManualAttributes[K] | undefined,
@@ -104,6 +134,7 @@ export function AttributeEditor({ manual, onChange, confirmed = {} }: Props) {
         value={manual.sockets}
         options={SOCKET_LEVELS}
         hint={confirmed.sockets}
+        inherited={fromChain.sockets}
         onChange={(v) => set("sockets", v)}
       />
       <Choice<WifiLevel>
@@ -111,6 +142,7 @@ export function AttributeEditor({ manual, onChange, confirmed = {} }: Props) {
         value={manual.wifi}
         options={WIFI_LEVELS}
         hint={confirmed.wifi}
+        inherited={fromChain.wifi}
         onChange={(v) => set("wifi", v)}
       />
       <Choice
@@ -119,21 +151,18 @@ export function AttributeEditor({ manual, onChange, confirmed = {} }: Props) {
         options={WIFI_LIMITS}
         labels={WIFI_LIMIT_LABELS}
         hint={confirmed.wifiLimitMinutes}
+        inherited={limitValue(fromChain.wifiLimitMinutes)}
         onChange={(v) => set("wifiLimitMinutes", parseLimit(v))}
       />
-      <Choice<"chain" | "independent">
-        label="Chain?"
-        value={chainValue(manual.chain)}
-        options={["chain", "independent"]}
-        onChange={(v) =>
-          set("chain", v === undefined ? undefined : v === "chain")
-        }
-      />
+      {!chainDefaults && (
+        <ChainChoice chain={manual.chain} onChange={(v) => set("chain", v)} />
+      )}
       <Choice
         label="My rating"
         value={ratingValue(manual.rating)}
         options={RATINGS}
         hint={confirmed.rating}
+        inherited={ratingValue(fromChain.rating)}
         onChange={(v) => set("rating", parseRating(v))}
       />
       <fieldset className="seats">
@@ -145,18 +174,21 @@ export function AttributeEditor({ manual, onChange, confirmed = {} }: Props) {
             value={manual.seats?.[slot]}
             options={SEAT_LEVELS}
             hint={confirmed[slot]}
+            inherited={fromChain.seats?.[slot]}
             onChange={(v) => setSeat(slot, v)}
           />
         ))}
       </fieldset>
-      <label className="notes">
-        Notes
-        <textarea
-          value={manual.notes ?? ""}
-          onChange={(e) => set("notes", e.target.value || undefined)}
-          rows={3}
-        />
-      </label>
+      {!chainDefaults && (
+        <label className="notes">
+          Notes
+          <textarea
+            value={manual.notes ?? ""}
+            onChange={(e) => set("notes", e.target.value || undefined)}
+            rows={3}
+          />
+        </label>
+      )}
     </form>
   );
 }

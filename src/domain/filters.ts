@@ -10,12 +10,14 @@ import {
 import { isOpenAt, weekendOpenShare } from "./openingHours";
 import { Point } from "./osm";
 import {
+  effectivePlace,
   Score,
   ScoreContext,
   scorePlace,
   socketScore,
   wifiScore,
 } from "./scoring";
+import { byVisitsThenMinutes, isShortVisitOnly } from "./triage";
 import { Place } from "./types";
 
 export type StatusFilter = "all" | "visited" | "bookmarked" | "to-try";
@@ -32,6 +34,8 @@ export interface Filters {
   independent: boolean;
   query: string;
   sort: SortKey;
+  shortVisits: boolean;
+  groupChains: boolean;
   area?: Point | undefined;
 }
 
@@ -44,6 +48,8 @@ export const DEFAULT_FILTERS: Filters = {
   independent: false,
   query: "",
   sort: "score",
+  shortVisits: false,
+  groupChains: false,
 };
 
 export interface RankedPlace {
@@ -58,10 +64,11 @@ function matchesStatus(place: Place, status: StatusFilter): boolean {
   return true;
 }
 
-function matchesReview(place: Place, review: ReviewFilter): boolean {
-  if (review === "likely") return isLikelyCafe(place);
-  if (review === "pending") return place.review === "pending";
-  return true;
+function matchesReview(place: Place, filters: Filters): boolean {
+  if (filters.review === "likely") return isLikelyCafe(place);
+  if (filters.review === "all") return true;
+  if (place.review !== "pending") return false;
+  return filters.shortVisits || !isShortVisitOnly(place);
 }
 
 function matchesHours(place: Place, filters: Filters): boolean {
@@ -81,8 +88,9 @@ function matchesAmenities(
   filters: Filters,
   ctx: ScoreContext,
 ): boolean {
-  if (filters.sockets && (socketScore(place) ?? 0) < 0.5) return false;
-  if (filters.wifi && (wifiScore(place) ?? 0) < 0.5) return false;
+  const effective = effectivePlace(place, ctx);
+  if (filters.sockets && (socketScore(effective) ?? 0) < 0.5) return false;
+  if (filters.wifi && (wifiScore(effective) ?? 0) < 0.5) return false;
   return !filters.independent || isChain(place, ctx.chainCounts) === false;
 }
 
@@ -103,7 +111,7 @@ export function confidentScore({ value, coverage }: Score): number {
 
 const SORTERS: Record<SortKey, (a: RankedPlace, b: RankedPlace) => number> = {
   score: (a, b) => confidentScore(b.score) - confidentScore(a.score),
-  visits: (a, b) => b.place.visits.length - a.place.visits.length,
+  visits: (a, b) => byVisitsThenMinutes(a.place, b.place),
   name: (a, b) => displayName(a.place).localeCompare(displayName(b.place)),
   recent: (a, b) =>
     (b.place.visits.at(-1)?.start ?? "").localeCompare(
@@ -122,7 +130,7 @@ export function rankPlaces(
         p.located &&
         withinArea(p, filters.area) &&
         matchesStatus(p, filters.status) &&
-        matchesReview(p, filters.review) &&
+        matchesReview(p, filters) &&
         matchesHours(p, filters) &&
         matchesAmenities(p, filters, ctx) &&
         matchesQuery(p, filters.query),
