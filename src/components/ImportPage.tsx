@@ -268,7 +268,9 @@ function PrivacyNote() {
   return (
     <p className="muted">
       Everything stays in this browser. Coordinates and place names go to
-      OpenStreetMap for matching.
+      OpenStreetMap for matching. For chain logos, the chain is looked up on
+      Wikidata and its website&apos;s icon is fetched through Google&apos;s
+      favicon service.
       {GOOGLE_MAPS_API_KEY &&
         " Google is used for place lookups: it gets the place IDs being looked up with the usual request details (your IP address, this site's address and its API key), and the place page loads Google's card live. Nothing Google returns is stored except the café verdict."}
     </p>

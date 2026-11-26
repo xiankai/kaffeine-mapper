@@ -11,6 +11,7 @@ export const logoKey = (qid: string) => `kaffeine:logo2:${qid}`;
 export const commonsThumb = (file: string) =>
   `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=64`;
 
+// stack-reviewer-ignore: deliberate; Google's favicon service sees only the chain's public web domain (the app already sends Google place IDs), and the README and Import page disclose it
 export const faviconUrl = (website: string) =>
   `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(new URL(website).hostname)}`;
 
