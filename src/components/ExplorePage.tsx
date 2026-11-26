@@ -74,7 +74,11 @@ export function ExplorePage() {
           />
         </section>
         <Suspense fallback={<div className="map-panel" />}>
-          <MapPanel ranked={ranked} />
+          <MapPanel
+            ranked={ranked}
+            places={dataset.places}
+            chainCounts={scoreContext.chainCounts}
+          />
         </Suspense>
       </div>
     </div>

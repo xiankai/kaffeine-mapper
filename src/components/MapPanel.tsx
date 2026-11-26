@@ -1,18 +1,34 @@
+import { DivIcon, divIcon } from "leaflet";
 import { useEffect, useMemo } from "react";
-import {
-  CircleMarker,
-  MapContainer,
-  Popup,
-  TileLayer,
-  useMap,
-} from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { Link } from "react-router-dom";
 import { RankedPlace } from "../domain/filters";
 import { displayName } from "../domain/insights";
+import {
+  chainMark,
+  chainWikidata,
+  MarkerSpec,
+  markerKey,
+  markerSpec,
+} from "../domain/markers";
+import { chainKey } from "../domain/chains";
+import { Place } from "../domain/types";
+import { useBrandLogos } from "../hooks/useBrandLogos";
+import { hideBrokenLogo, markerHtml, markerSize } from "./markerIcon";
 import { SCORE_COLORS, scoreClass } from "./scoreClass";
 import "leaflet/dist/leaflet.css";
 
 const MAX_MARKERS = 1500;
+
+function BrokenLogoFallback() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    container.addEventListener("error", hideBrokenLogo, true);
+    return () => container.removeEventListener("error", hideBrokenLogo, true);
+  }, [map]);
+  return null;
+}
 
 function FitBounds({ points }: { points: Array<[number, number]> }) {
   const map = useMap();
@@ -24,12 +40,46 @@ function FitBounds({ points }: { points: Array<[number, number]> }) {
   return null;
 }
 
-export default function MapPanel({ ranked }: { ranked: RankedPlace[] }) {
-  const shown = ranked.slice(0, MAX_MARKERS);
+const ICONS = new Map<string, DivIcon>();
+
+function iconFor(spec: MarkerSpec): DivIcon {
+  const key = markerKey(spec);
+  const known = ICONS.get(key);
+  if (known) return known;
+  const size = markerSize(spec);
+  const icon = divIcon({
+    html: markerHtml(spec),
+    className: "map-marker-icon",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+  ICONS.set(key, icon);
+  return icon;
+}
+
+interface Props {
+  ranked: RankedPlace[];
+  places: Place[];
+  chainCounts: Map<string, number>;
+}
+
+export default function MapPanel({ ranked, places, chainCounts }: Props) {
+  const shown = useMemo(() => ranked.slice(0, MAX_MARKERS), [ranked]);
   const points = useMemo(
     () => shown.map((r) => [r.place.lat, r.place.lng] as [number, number]),
     [shown],
   );
+  const qids = useMemo(
+    () => chainWikidata(places, chainCounts),
+    [places, chainCounts],
+  );
+  const wanted = shown.flatMap(({ place }) => {
+    const key = place.review === "cafe" && chainKey(place, chainCounts);
+    const qid = key ? qids.get(key) : undefined;
+    return qid ? [qid] : [];
+  });
+  const logos = useBrandLogos(wanted);
   return (
     <div className="map-panel">
       <MapContainer
@@ -42,16 +92,19 @@ export default function MapPanel({ ranked }: { ranked: RankedPlace[] }) {
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBounds points={points} />
+        <BrokenLogoFallback />
         {shown.map(({ place, score }) => (
-          <CircleMarker
+          <Marker
             key={place.id}
-            center={[place.lat, place.lng]}
-            radius={place.visits.length ? 7 : 6}
-            pathOptions={{
-              color: SCORE_COLORS[scoreClass(score.value)],
-              fillOpacity: place.visits.length ? 0.85 : 0.25,
-              weight: 2,
-            }}
+            position={[place.lat, place.lng]}
+            title={displayName(place)}
+            icon={iconFor(
+              markerSpec(
+                place,
+                SCORE_COLORS[scoreClass(score.value)] as string,
+                chainMark(place, chainCounts, qids, logos),
+              ),
+            )}
           >
             <Popup>
               <Link to={`/place/${encodeURIComponent(place.id)}`}>
@@ -61,7 +114,7 @@ export default function MapPanel({ ranked }: { ranked: RankedPlace[] }) {
               Score {score.value ?? "?"} ·{" "}
               {place.visits.length ? `${place.visits.length} visits` : "saved"}
             </Popup>
-          </CircleMarker>
+          </Marker>
         ))}
       </MapContainer>
     </div>
