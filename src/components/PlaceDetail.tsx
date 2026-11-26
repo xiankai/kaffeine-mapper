@@ -1,16 +1,26 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  confirmedAt,
+  editManual,
+  evaluationNotes,
+  relativeDate,
+} from "../domain/evaluations";
+import {
   displayName,
+  findPlace,
   isChain,
   scheduleOf,
   visitPattern,
 } from "../domain/insights";
 import { WeekSchedule } from "../domain/openingHours";
 import { METRIC_LABELS, METRICS, Score, scorePlace } from "../domain/scoring";
-import { OsmMatch, Place, Review } from "../domain/types";
+import { ManualAttributes, OsmMatch, Place, Review } from "../domain/types";
 import { pickCandidate, rejectCandidates } from "../domain/merge";
+import { useCheckIn } from "../hooks/useCheckIn";
 import { useStore } from "../state/store";
 import { AttributeEditor } from "./AttributeEditor";
+import { CheckInOutcome } from "./EvaluationSheet";
 import { scoreClass } from "./scoreClass";
 import { VisitHeatmap } from "./VisitHeatmap";
 
@@ -229,7 +239,9 @@ function WhenYouGo({ place }: { place: Place }) {
   return (
     <>
       <p className="muted">
-        {pattern.total} visits · median {pattern.medianMinutes} min ·{" "}
+        {pattern.total} visits ·{" "}
+        {pattern.medianMinutes !== undefined &&
+          `median ${pattern.medianMinutes} min · `}
         {Math.round(pattern.weekendShare * 100)}% on weekends
         {pattern.lastVisit && ` · last ${pattern.lastVisit.slice(0, 10)}`}
       </p>
@@ -238,12 +250,47 @@ function WhenYouGo({ place }: { place: Place }) {
   );
 }
 
+function YourNotes({
+  place,
+  onChange,
+}: {
+  place: Place;
+  onChange: (manual: ManualAttributes) => void;
+}) {
+  const [now] = useState(() => new Date());
+  const confirmed = Object.fromEntries(
+    Object.entries(confirmedAt(place)).map(([key, at]) => [
+      key,
+      relativeDate(at, now),
+    ]),
+  );
+  const notes = evaluationNotes(place);
+  return (
+    <section>
+      <h2>Your notes</h2>
+      <AttributeEditor
+        manual={place.manual}
+        confirmed={confirmed}
+        onChange={onChange}
+      />
+      {notes.length > 0 && (
+        <ul className="visit-notes" aria-label="Notes from your visits">
+          {notes.map((e) => (
+            <li key={e.at}>
+              <span className="muted">{relativeDate(e.at, now)}</span> {e.note}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function PlaceDetail() {
   const { id = "" } = useParams();
   const { dataset, scoreContext, editPlace } = useStore();
-  const place = dataset.places.find(
-    (p) => p.id === id || p.aliases?.includes(id),
-  );
+  const checkIn = useCheckIn();
+  const place = findPlace(dataset.places, id);
   if (!place) {
     return (
       <p className="empty">
@@ -263,6 +310,12 @@ export function PlaceDetail() {
         score={score}
         chain={isChain(place, scoreContext.chainCounts)}
       />
+      <section className="checkin" aria-label="Check in">
+        <button type="button" onClick={() => checkIn.checkIn(place.id)}>
+          📍 I&apos;m here
+        </button>
+      </section>
+      <CheckInOutcome flow={checkIn} />
       {place.osmCandidates?.length ? (
         <CandidatePicker
           candidates={place.osmCandidates}
@@ -288,15 +341,12 @@ export function PlaceDetail() {
             tags={place.osm?.tags ?? {}}
           />
         </section>
-        <section>
-          <h2>Your notes</h2>
-          <AttributeEditor
-            manual={place.manual}
-            onChange={(manual) =>
-              editPlace(place.id, (p) => ({ ...p, manual }))
-            }
-          />
-        </section>
+        <YourNotes
+          place={place}
+          onChange={(manual) =>
+            editPlace(place.id, (p) => editManual(p, manual, new Date()))
+          }
+        />
         <section className="span-2">
           <h2>When you go</h2>
           <WhenYouGo place={place} />

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { osm, place, visit } from "../../test/fixtures";
 import { renderWithStore } from "../../test/render";
 import { PlaceDetail } from "../PlaceDetail";
@@ -152,6 +152,52 @@ describe("PlaceDetail", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("logs a visit here, saves the evaluation and dates what it confirmed", () => {
+    show(
+      [place({ id: "g:kiln", name: "Kiln", manual: { notes: "mine" } })],
+      "g:kiln",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /I'm here/ }));
+    expect(screen.getByText(/Checked in at Kiln/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/^1 visits · \d+% on weekends · last /),
+    ).toBeInTheDocument();
+    const sheet = screen.getByRole("dialog", { name: "How is Kiln?" });
+    fireEvent.click(
+      within(within(sheet).getByRole("group", { name: "Rating" })).getByRole(
+        "button",
+        { name: "5" },
+      ),
+    );
+    fireEvent.change(within(sheet).getByRole("textbox"), {
+      target: { value: "Loud music" },
+    });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Save" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "My rating" })).toHaveValue(
+      "5",
+    );
+    expect(
+      screen.getByRole("combobox", { name: "My rating" }),
+    ).toHaveAccessibleDescription("confirmed today");
+    expect(screen.getByRole("textbox", { name: "Notes" })).toHaveValue("mine");
+    expect(
+      within(
+        screen.getByRole("list", { name: "Notes from your visits" }),
+      ).getByText("Loud music"),
+    ).toBeInTheDocument();
+  });
+
+  it("dates an attribute edit and drops the date when it is cleared", () => {
+    show();
+    const sockets = () =>
+      screen.getByRole("combobox", { name: "Power sockets" });
+    fireEvent.change(sockets(), { target: { value: "few" } });
+    expect(sockets()).toHaveAccessibleDescription("confirmed today");
+    fireEvent.change(sockets(), { target: { value: "" } });
+    expect(sockets()).not.toHaveAccessibleDescription();
   });
 
   it("reports a missing place", () => {

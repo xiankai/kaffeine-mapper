@@ -1,11 +1,25 @@
-import { Dataset, OsmMatch, Place, Visit } from "./types";
+import { dropCoveredCheckins } from "./checkin";
+import { Dataset, Evaluation, OsmMatch, Place, Visit } from "./types";
 
 const union = <T>(a: T[], b: T[]): T[] => [...new Set([...a, ...b])];
 
 function mergeVisits(a: Visit[], b: Visit[]): Visit[] {
   const byStart = new Map(a.map((v) => [v.start, v]));
   b.forEach((v) => byStart.has(v.start) || byStart.set(v.start, v));
-  return [...byStart.values()].sort((x, y) => x.start.localeCompare(y.start));
+  return dropCoveredCheckins(
+    [...byStart.values()].sort((x, y) => x.start.localeCompare(y.start)),
+  );
+}
+
+function mergeEvaluations(
+  a: Evaluation[] | undefined,
+  b: Evaluation[] | undefined,
+): Pick<Place, "evaluations"> {
+  if (!a && !b) return {};
+  const byAt = new Map([...(b ?? []), ...(a ?? [])].map((e) => [e.at, e]));
+  return {
+    evaluations: [...byAt.values()].sort((x, y) => x.at.localeCompare(y.at)),
+  };
 }
 
 function preferLocated(
@@ -25,8 +39,14 @@ export function mergePlace(existing: Place, incoming: Place): Place {
     lists: union(existing.lists, incoming.lists),
     visits: mergeVisits(existing.visits, incoming.visits),
     manual: { ...incoming.manual, ...existing.manual },
+    ...mergeEvaluations(existing.evaluations, incoming.evaluations),
     review: existing.review !== "pending" ? existing.review : incoming.review,
   };
+}
+
+function countNewVisits(before: Visit[], after: Visit[]): number {
+  const known = new Set(before.map((v) => v.start));
+  return after.filter((v) => !known.has(v.start)).length;
 }
 
 export interface MergeSummary {
@@ -64,7 +84,7 @@ export function mergeIntoDataset(
       continue;
     }
     const merged = mergePlace(existing, place);
-    newVisits += merged.visits.length - existing.visits.length;
+    newVisits += countNewVisits(existing.visits, merged.visits);
     byId.set(place.id, merged);
     updated++;
   }

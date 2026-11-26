@@ -59,6 +59,62 @@ describe("mergeIntoDataset", () => {
   });
 });
 
+describe("merging check-ins with Timeline imports", () => {
+  const checkin = (start: string) => ({
+    ...visit(start, 0),
+    source: "checkin" as const,
+  });
+
+  it("replaces a check-in within two hours of an imported visit at the same place", () => {
+    const base = ds(
+      place({
+        id: "g:a",
+        visits: [
+          checkin("2026-11-20T09:30:00.000Z"),
+          checkin("2026-11-20T11:00:00.000Z"),
+          checkin("2026-11-24T10:00:00.000Z"),
+        ],
+      }),
+    );
+    const summary = mergeIntoDataset(base, [
+      place({ id: "g:a", visits: [visit("2026-11-20T10:00:00.000Z", 45)] }),
+    ]);
+    expect(summary.dataset.places[0]?.visits.map((v) => v.start)).toEqual([
+      "2026-11-20T10:00:00.000Z",
+      "2026-11-24T10:00:00.000Z",
+    ]);
+    expect(summary.newVisits).toBe(1);
+  });
+
+  it("keeps a check-in that no imported visit overlaps, or at another place", () => {
+    const base = ds(
+      place({ id: "g:a", visits: [checkin("2026-11-20T13:00:00.000Z")] }),
+      place({ id: "g:b", visits: [checkin("2026-11-20T10:00:00.000Z")] }),
+    );
+    const summary = mergeIntoDataset(base, [
+      place({ id: "g:a", visits: [visit("2026-11-20T10:00:00.000Z", 30)] }),
+    ]);
+    expect(summary.dataset.places.map((p) => p.visits.length)).toEqual([2, 1]);
+  });
+
+  it("keeps evaluations from both sides when places are folded together", () => {
+    const merged = mergePlace(
+      place({ evaluations: [{ at: "2026-11-02", rating: 4 }] }),
+      place({
+        evaluations: [
+          { at: "2026-11-01", wifi: "ok" },
+          { at: "2026-11-02", rating: 2 },
+        ],
+      }),
+    );
+    expect(merged.evaluations).toEqual([
+      { at: "2026-11-01", wifi: "ok" },
+      { at: "2026-11-02", rating: 4 },
+    ]);
+    expect(mergePlace(place(), place()).evaluations).toBeUndefined();
+  });
+});
+
 describe("linkByOsm", () => {
   it("folds places sharing an OSM match into the most visited one and records aliases", () => {
     const linked = linkByOsm(

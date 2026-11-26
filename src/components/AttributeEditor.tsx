@@ -1,15 +1,31 @@
+import { useId } from "react";
+import { ConfirmKey } from "../domain/evaluations";
 import {
   ManualAttributes,
+  SEAT_LEVELS,
   SeatLevel,
   SLOTS,
   Slot,
+  SOCKET_LEVELS,
   SocketLevel,
+  WIFI_LEVELS,
   WifiLevel,
 } from "../domain/types";
+import {
+  limitValue,
+  parseLimit,
+  parseRating,
+  RATINGS,
+  ratingValue,
+  slotLabel,
+  WIFI_LIMIT_LABELS,
+  WIFI_LIMITS,
+} from "./attributeOptions";
 
 interface Props {
   manual: ManualAttributes;
   onChange: (manual: ManualAttributes) => void;
+  confirmed?: Partial<Record<ConfirmKey, string>>;
 }
 
 function withField<K extends keyof ManualAttributes>(
@@ -25,47 +41,52 @@ function Choice<T extends string>({
   label,
   value,
   options,
+  labels,
+  hint,
   onChange,
 }: {
   label: string;
   value: T | undefined;
   options: readonly T[];
+  labels?: Record<T, string>;
+  hint?: string | undefined;
   onChange: (v: T | undefined) => void;
 }) {
+  const hintId = useId();
   return (
-    <label>
-      {label}
-      <select
-        value={value ?? ""}
-        onChange={(e) =>
-          onChange((e.target.value || undefined) as T | undefined)
-        }
-      >
-        <option value="">unknown</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="field">
+      <label>
+        {label}
+        <select
+          value={value ?? ""}
+          aria-describedby={hint ? hintId : undefined}
+          onChange={(e) =>
+            onChange((e.target.value || undefined) as T | undefined)
+          }
+        >
+          <option value="">unknown</option>
+          {options.map((o) => (
+            <option key={o} value={o}>
+              {labels?.[o] ?? o}
+            </option>
+          ))}
+        </select>
+      </label>
+      {hint && (
+        <small id={hintId} className="confirmed">
+          confirmed {hint}
+        </small>
+      )}
+    </div>
   );
 }
 
-const SLOT_LABEL = (slot: Slot) => slot.replace("-", " ");
-
-function limitValue(limit: number | null | undefined): string {
-  if (limit === undefined) return "";
-  return limit === null ? "none" : String(limit);
+function chainValue(chain: boolean | undefined) {
+  if (chain === undefined) return undefined;
+  return chain ? "chain" : "independent";
 }
 
-function parseLimit(value: string): number | null | undefined {
-  if (value === "") return undefined;
-  if (value === "none") return null;
-  return Number(value);
-}
-
-export function AttributeEditor({ manual, onChange }: Props) {
+export function AttributeEditor({ manual, onChange, confirmed = {} }: Props) {
   const set = <K extends keyof ManualAttributes>(
     key: K,
     value: ManualAttributes[K] | undefined,
@@ -81,61 +102,49 @@ export function AttributeEditor({ manual, onChange }: Props) {
       <Choice<SocketLevel>
         label="Power sockets"
         value={manual.sockets}
-        options={["none", "few", "many"]}
+        options={SOCKET_LEVELS}
+        hint={confirmed.sockets}
         onChange={(v) => set("sockets", v)}
       />
       <Choice<WifiLevel>
         label="Wi-Fi strength"
         value={manual.wifi}
-        options={["none", "weak", "ok", "strong"]}
+        options={WIFI_LEVELS}
+        hint={confirmed.wifi}
         onChange={(v) => set("wifi", v)}
       />
-      <label>
-        Wi-Fi time limit
-        <select
-          value={limitValue(manual.wifiLimitMinutes)}
-          onChange={(e) => set("wifiLimitMinutes", parseLimit(e.target.value))}
-        >
-          <option value="">unknown</option>
-          <option value="none">no limit</option>
-          <option value="30">30 min</option>
-          <option value="60">1 h</option>
-          <option value="120">2 h</option>
-          <option value="180">3 h</option>
-        </select>
-      </label>
+      <Choice
+        label="Wi-Fi time limit"
+        value={limitValue(manual.wifiLimitMinutes)}
+        options={WIFI_LIMITS}
+        labels={WIFI_LIMIT_LABELS}
+        hint={confirmed.wifiLimitMinutes}
+        onChange={(v) => set("wifiLimitMinutes", parseLimit(v))}
+      />
       <Choice<"chain" | "independent">
         label="Chain?"
-        value={
-          manual.chain === undefined
-            ? undefined
-            : manual.chain
-              ? "chain"
-              : "independent"
-        }
+        value={chainValue(manual.chain)}
         options={["chain", "independent"]}
         onChange={(v) =>
           set("chain", v === undefined ? undefined : v === "chain")
         }
       />
-      <Choice<"1" | "2" | "3" | "4" | "5">
+      <Choice
         label="My rating"
-        value={
-          manual.rating === undefined
-            ? undefined
-            : (String(manual.rating) as "1")
-        }
-        options={["1", "2", "3", "4", "5"]}
-        onChange={(v) => set("rating", v === undefined ? undefined : Number(v))}
+        value={ratingValue(manual.rating)}
+        options={RATINGS}
+        hint={confirmed.rating}
+        onChange={(v) => set("rating", parseRating(v))}
       />
       <fieldset className="seats">
         <legend>Getting a seat</legend>
         {SLOTS.map((slot) => (
           <Choice<SeatLevel>
             key={slot}
-            label={SLOT_LABEL(slot)}
+            label={slotLabel(slot)}
             value={manual.seats?.[slot]}
-            options={["easy", "ok", "hard"]}
+            options={SEAT_LEVELS}
+            hint={confirmed[slot]}
             onChange={(v) => setSeat(slot, v)}
           />
         ))}

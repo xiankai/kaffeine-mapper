@@ -70,4 +70,36 @@ describe("parseDatasetFile", () => {
     expect(() => parseDatasetFile({ version: 1 })).toThrow(/export/);
     expect(() => parseDatasetFile(null)).toThrow(/export/);
   });
+
+  it("round-trips check-ins and evaluations through a JSON backup", () => {
+    const dataset = {
+      version: 1 as const,
+      places: [
+        place({
+          visits: [
+            {
+              start: "2026-11-26T05:00:00.000Z",
+              localDay: 4,
+              localMinute: 840,
+              durationMin: 0,
+              source: "checkin",
+            },
+          ],
+          manual: { wifiLimitMinutes: null },
+          evaluations: [
+            {
+              at: "2026-11-26T05:00:00.000Z",
+              wifiLimitMinutes: null,
+              seats: { "weekday-afternoon": "easy" },
+              note: "quiet",
+            },
+          ],
+        }),
+        place({ id: "g:old" }),
+      ],
+    };
+    const restored = parseDatasetFile(JSON.parse(JSON.stringify(dataset)));
+    expect(restored).toEqual(dataset);
+    expect(restored.places[1]?.evaluations).toBeUndefined();
+  });
 });
