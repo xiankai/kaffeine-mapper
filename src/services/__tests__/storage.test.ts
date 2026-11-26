@@ -103,3 +103,31 @@ describe("parseDatasetFile", () => {
     expect(restored.places[1]?.evaluations).toBeUndefined();
   });
 });
+
+describe("parseDatasetFile chains", () => {
+  it("round-trips chain defaults and ignores a malformed value", () => {
+    const dataset = {
+      version: 1 as const,
+      places: [place()],
+      chains: {
+        doutor: {
+          manual: { wifi: "ok" as const },
+          evaluations: [
+            { at: "2026-11-26T10:00:00.000Z", wifi: "ok" as const },
+          ],
+        },
+      },
+    };
+    expect(parseDatasetFile(JSON.parse(JSON.stringify(dataset)))).toEqual(
+      dataset,
+    );
+    expect(parseDatasetFile({ version: 1, places: [], chains: [] })).toEqual({
+      version: 1,
+      places: [],
+    });
+    expect(parseDatasetFile({ version: 1, places: [], chains: null })).toEqual({
+      version: 1,
+      places: [],
+    });
+  });
+});

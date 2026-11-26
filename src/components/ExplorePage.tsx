@@ -8,14 +8,14 @@ import { AreaPicker } from "./AreaPicker";
 import { CheckInPanel, FreshnessLine } from "./CheckInPanel";
 import { CheckInOutcome } from "./EvaluationSheet";
 import { FilterBar } from "./FilterBar";
-import { PlaceCard } from "./PlaceCard";
+import { ResultList } from "./ResultList";
 
 const MapPanel = lazy(() => import("./MapPanel"));
 
 const PAGE_SIZE = 60;
 
 export function ExplorePage() {
-  const { dataset, scoreContext } = useStore();
+  const { dataset, scoreContext, decidePlaces } = useStore();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [shown, setShown] = useState(PAGE_SIZE);
   const area = useArea(dataset.places);
@@ -64,24 +64,14 @@ export function ExplorePage() {
               {area.mode === "everywhere" ? "." : " in this area."}
             </p>
           )}
-          <ol className="cards">
-            {ranked.slice(0, shown).map((r) => (
-              <PlaceCard
-                key={r.place.id}
-                ranked={r}
-                chainCounts={scoreContext.chainCounts}
-              />
-            ))}
-          </ol>
-          {ranked.length > shown && (
-            <button
-              type="button"
-              className="more"
-              onClick={() => setShown(shown + PAGE_SIZE)}
-            >
-              Show more ({ranked.length - shown} left)
-            </button>
-          )}
+          <ResultList
+            ranked={ranked}
+            grouped={filters.groupChains}
+            shown={shown}
+            chainCounts={scoreContext.chainCounts}
+            onDecide={decidePlaces}
+            onMore={() => setShown(shown + PAGE_SIZE)}
+          />
         </section>
         <Suspense fallback={<div className="map-panel" />}>
           <MapPanel ranked={ranked} />

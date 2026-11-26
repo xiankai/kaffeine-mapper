@@ -167,3 +167,28 @@ describe("updatePlace", () => {
     expect(updated.places.map((p) => p.review)).toEqual(["pending", "cafe"]);
   });
 });
+
+describe("merging review decisions", () => {
+  const owner = place({ review: "not-cafe", reviewBy: "owner" });
+  const auto = place({ review: "cafe", reviewBy: "auto" });
+  const unsure = place({ review: "pending", reviewBy: "owner" });
+  const untouched = place();
+
+  it("lets a hand decision beat an automatic one, which beats none", () => {
+    expect(mergePlace(auto, owner)).toMatchObject({
+      review: "not-cafe",
+      reviewBy: "owner",
+    });
+    expect(mergePlace(untouched, auto)).toMatchObject({
+      review: "cafe",
+      reviewBy: "auto",
+    });
+    expect(mergePlace(auto, unsure)).toMatchObject({
+      review: "pending",
+      reviewBy: "owner",
+    });
+    const legacy = mergePlace(place({ review: "cafe" }), unsure);
+    expect(legacy.review).toBe("cafe");
+    expect(legacy.reviewBy).toBeUndefined();
+  });
+});

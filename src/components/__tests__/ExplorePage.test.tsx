@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { osm, place, visit } from "../../test/fixtures";
 import { renderWithStore } from "../../test/render";
@@ -155,5 +155,61 @@ describe("ExplorePage area", () => {
     ).toBeInTheDocument();
     spy.mockRestore();
     jest.restoreAllMocks();
+  });
+});
+
+describe("ExplorePage chain grouping", () => {
+  const branch = (id: string, score: number) =>
+    place({
+      id,
+      name: `Doutor ${id}`,
+      osm: osm({ brand: "Doutor" }, `node/${id}`),
+      manual: { rating: score },
+    });
+  const places = [
+    branch("a", 5),
+    branch("b", 1),
+    place({ id: "k", name: "Kiln", osm: osm({ name: "Kiln" }, "node/k") }),
+  ];
+
+  beforeEach(() => localStorage.setItem("kaffeine-mapper:area", "everywhere"));
+
+  it("folds branches into one row that expands and decides them all", async () => {
+    renderWithStore(<ExplorePage />, { places });
+    await screen.findByTestId("map");
+    await userEvent.click(screen.getByRole("button", { name: "Group chains" }));
+    const row = screen.getByText("Doutor ×2").closest("li") as HTMLElement;
+    expect(within(row).getByTitle("Best branch score")).toHaveTextContent("67");
+    expect(within(row).getByText("2 matching branches")).toBeVisible();
+    expect(screen.getByText("Kiln")).toBeInTheDocument();
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Mark all 2 as not cafés" }),
+    );
+    expect(screen.queryByText("Doutor ×2")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Places"), {
+      target: { value: "all" },
+    });
+    const again = screen.getByText("Doutor ×2").closest("li") as HTMLElement;
+    await userEvent.click(
+      within(again).getByRole("button", {
+        name: "Mark all 2 branches as cafés",
+      }),
+    );
+    fireEvent.change(screen.getByLabelText("Places"), {
+      target: { value: "likely" },
+    });
+    expect(screen.getByText("Doutor ×2")).toBeInTheDocument();
+  });
+
+  it("pages over grouped rows", async () => {
+    const many = Array.from({ length: 62 }, (_, i) =>
+      place({ id: `p${i}`, name: `Solo ${i}`, osm: osm({}, `node/p${i}`) }),
+    );
+    renderWithStore(<ExplorePage />, { places: [...places, ...many] });
+    await screen.findByTestId("map");
+    await userEvent.click(screen.getByRole("button", { name: "Group chains" }));
+    expect(
+      screen.getByRole("button", { name: /Show more \(4 left\)/ }),
+    ).toBeInTheDocument();
   });
 });

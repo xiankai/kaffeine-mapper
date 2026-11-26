@@ -1,9 +1,16 @@
-import { Evaluation, ManualAttributes, Place, Slot, SLOTS } from "./types";
+import {
+  Assessed,
+  Evaluation,
+  ManualAttributes,
+  Place,
+  Slot,
+  SLOTS,
+} from "./types";
 
 export type EvaluatedField = "sockets" | "wifi" | "wifiLimitMinutes" | "rating";
 export type ConfirmKey = EvaluatedField | Slot;
 
-const FIELDS: readonly EvaluatedField[] = [
+export const EVALUATED_FIELDS: readonly EvaluatedField[] = [
   "sockets",
   "wifi",
   "wifiLimitMinutes",
@@ -15,7 +22,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 type Attributes = Pick<ManualAttributes, EvaluatedField | "seats">;
 
 function definedKeys(attributes: Attributes): ConfirmKey[] {
-  const fields = FIELDS.filter((f) => attributes[f] !== undefined);
+  const fields = EVALUATED_FIELDS.filter((f) => attributes[f] !== undefined);
   const slots = SLOTS.filter((s) => attributes.seats?.[s] !== undefined);
   return [...fields, ...slots];
 }
@@ -32,7 +39,7 @@ function mergeSeats(older: Attributes, newer: Attributes): Attributes {
 
 function definedFields(evaluation: Evaluation): Partial<ManualAttributes> {
   return Object.fromEntries(
-    FIELDS.filter((f) => evaluation[f] !== undefined).map((f) => [
+    EVALUATED_FIELDS.filter((f) => evaluation[f] !== undefined).map((f) => [
       f,
       evaluation[f],
     ]),
@@ -91,7 +98,7 @@ export function evaluationFromEdit(
   after: ManualAttributes,
   at: string,
 ): Evaluation {
-  const changed = FIELDS.filter(
+  const changed = EVALUATED_FIELDS.filter(
     (f) => after[f] !== undefined && after[f] !== before[f],
   );
   return {
@@ -101,28 +108,30 @@ export function evaluationFromEdit(
   };
 }
 
-export function editManual(
-  place: Place,
+export function editManual<T extends Assessed>(
+  target: T,
   manual: ManualAttributes,
   now: Date,
-): Place {
+): T {
   const evaluation = evaluationFromEdit(
-    place.manual,
+    target.manual,
     manual,
     now.toISOString(),
   );
-  if (isEmptyEvaluation(evaluation)) return { ...place, manual };
+  if (isEmptyEvaluation(evaluation)) return { ...target, manual };
   return {
-    ...place,
+    ...target,
     manual,
-    evaluations: appendEvaluation(place.evaluations ?? [], evaluation),
+    evaluations: appendEvaluation(target.evaluations ?? [], evaluation),
   };
 }
 
-export function confirmedAt(place: Place): Partial<Record<ConfirmKey, string>> {
-  const current = new Set(definedKeys(place.manual));
+export function confirmedAt(
+  target: Assessed,
+): Partial<Record<ConfirmKey, string>> {
+  const current = new Set(definedKeys(target.manual));
   const latest: Partial<Record<ConfirmKey, string>> = {};
-  for (const evaluation of place.evaluations ?? []) {
+  for (const evaluation of target.evaluations ?? []) {
     for (const key of definedKeys(evaluation)) {
       const seen = latest[key];
       if (current.has(key) && (!seen || evaluation.at > seen))

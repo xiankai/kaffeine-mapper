@@ -1,6 +1,7 @@
 export type PlaceSource = "timeline" | "saved" | "starred" | "manual";
 
 export type Review = "pending" | "cafe" | "not-cafe";
+export type ReviewBy = "auto" | "owner";
 
 export type DayPart = "morning" | "afternoon" | "evening";
 export type DayKind = "weekday" | "weekend";
@@ -81,15 +82,24 @@ export interface Place {
   osmCheckedAt?: string;
   osmMatcher?: number;
   review: Review;
+  reviewBy?: ReviewBy;
   manual: ManualAttributes;
   evaluations?: Evaluation[];
   googleRating?: number;
   googleNote?: string;
 }
 
+export interface Assessed {
+  manual: ManualAttributes;
+  evaluations?: Evaluation[];
+}
+
+export type ChainDefaults = Assessed;
+
 export interface Dataset {
   version: 1;
   places: Place[];
+  chains?: Record<string, ChainDefaults>;
 }
 
 export const emptyDataset = (): Dataset => ({ version: 1, places: [] });

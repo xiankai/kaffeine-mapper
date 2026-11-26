@@ -1,6 +1,6 @@
 import { get, set } from "idb-keyval";
 import { DEFAULT_PREFERENCES, Preferences } from "../domain/scoring";
-import { Dataset, emptyDataset } from "../domain/types";
+import { ChainDefaults, Dataset, emptyDataset } from "../domain/types";
 
 const DATASET_KEY = "kaffeine:dataset";
 const PREFERENCES_KEY = "kaffeine:preferences";
@@ -32,10 +32,14 @@ export const saveDataset = async (dataset: Dataset) =>
 export const savePreferences = async (preferences: Preferences) =>
   set(PREFERENCES_KEY, preferences);
 
+const isRecord = (value: unknown): value is Record<string, ChainDefaults> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 export function parseDatasetFile(json: unknown): Dataset {
   const candidate = json as Partial<Dataset>;
   if (candidate?.version !== 1 || !Array.isArray(candidate.places)) {
     throw new Error("Not a kaffeine-mapper export.");
   }
-  return { version: 1, places: candidate.places };
+  const chains = isRecord(candidate.chains) ? candidate.chains : undefined;
+  return { version: 1, places: candidate.places, ...(chains && { chains }) };
 }
