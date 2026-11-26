@@ -270,7 +270,7 @@ function PrivacyNote() {
       Everything stays in this browser. Coordinates and place names go to
       OpenStreetMap for matching.
       {GOOGLE_MAPS_API_KEY &&
-        " Google is used for place lookups and receives only place IDs, plus the usual request details such as your IP address."}
+        " Google is used for place lookups: it gets the place IDs being looked up with the usual request details (your IP address, this site's address and its API key), and the place page loads Google's card live. Nothing Google returns is stored except the café verdict."}
     </p>
   );
 }

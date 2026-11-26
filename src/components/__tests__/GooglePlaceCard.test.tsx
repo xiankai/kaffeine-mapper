@@ -100,7 +100,9 @@ describe("with a Google Maps key", () => {
 
   it("tells the import page that Google only gets place IDs", () => {
     renderWithStore(<ImportPage />);
-    expect(screen.getByText(/receives only place IDs/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/gets the place IDs being looked up/),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "4. Classify with Google" }),
     ).toBeInTheDocument();

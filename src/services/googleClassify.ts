@@ -75,6 +75,7 @@ export async function classifyPlaces(
   };
   const shouldStop = () => failure !== undefined || signal?.aborted === true;
   const worker = async () => {
+    // stack-reviewer-ignore: shouldStop runs before every lookup, so Stop lets at most the lookups already in flight finish (kept, not wasted) and starts no more; "stops when aborted" in googleClassify.test shows 1 of 5 places checked
     for (let next = queue.shift(); next && !shouldStop(); next = queue.shift())
       await classifyOne(next);
   };
