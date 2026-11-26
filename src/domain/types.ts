@@ -19,11 +19,31 @@ export type SocketLevel = "none" | "few" | "many";
 export type WifiLevel = "none" | "weak" | "ok" | "strong";
 export type SeatLevel = "easy" | "ok" | "hard";
 
+export const SOCKET_LEVELS: readonly SocketLevel[] = ["none", "few", "many"];
+export const WIFI_LEVELS: readonly WifiLevel[] = [
+  "none",
+  "weak",
+  "ok",
+  "strong",
+];
+export const SEAT_LEVELS: readonly SeatLevel[] = ["easy", "ok", "hard"];
+
 export interface Visit {
   start: string;
   localDay: number;
   localMinute: number;
   durationMin: number;
+  source?: "checkin";
+}
+
+export interface Evaluation {
+  at: string;
+  sockets?: SocketLevel;
+  wifi?: WifiLevel;
+  wifiLimitMinutes?: number | null;
+  seats?: Partial<Record<Slot, SeatLevel>>;
+  rating?: number;
+  note?: string;
 }
 
 export interface OsmMatch {
@@ -62,6 +82,7 @@ export interface Place {
   osmMatcher?: number;
   review: Review;
   manual: ManualAttributes;
+  evaluations?: Evaluation[];
   googleRating?: number;
   googleNote?: string;
 }

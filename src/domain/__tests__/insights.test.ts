@@ -88,11 +88,19 @@ describe("insights", () => {
     });
     expect(pattern.weekendShare).toBeCloseTo(2 / 3);
     expect(pattern.heatmap[6]?.[14]).toBe(1);
-    expect(visitPattern(place())).toMatchObject({
-      total: 0,
-      weekendShare: 0,
-      medianMinutes: 0,
-    });
+    const empty = visitPattern(place());
+    expect(empty).toMatchObject({ total: 0, weekendShare: 0 });
+    expect(empty.medianMinutes).toBeUndefined();
+  });
+
+  it("leaves check-ins out of the median stay", () => {
+    const checkin = { ...visit("2024-01-08", 0), source: "checkin" as const };
+    expect(
+      visitPattern(place({ visits: [visit("2024-01-01", 40), checkin] })),
+    ).toMatchObject({ total: 2, medianMinutes: 40 });
+    expect(
+      visitPattern(place({ visits: [checkin] })).medianMinutes,
+    ).toBeUndefined();
   });
 
   it("classifies status and café likelihood", () => {

@@ -8,7 +8,7 @@
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 2000;
 }
 
 .brand {
@@ -349,6 +349,85 @@ fieldset {
 .editor .notes {
   flex-direction: column;
   align-items: stretch;
+}
+
+.field {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.confirmed {
+  justify-self: end;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.visit-notes {
+  padding-left: 1rem;
+  margin: 0.75rem 0 0;
+}
+
+.explore-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.freshness {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.checkin {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin-bottom: 0.75rem;
+}
+
+.checkin legend,
+.sheet legend {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: grid;
+  gap: 0.75rem;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 25%);
+}
+
+.sheet h2 {
+  margin: 0;
+}
+
+.sheet .notes {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sheet-actions button {
+  flex: 1;
+  padding: 0.6rem;
 }
 
 .seats {

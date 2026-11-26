@@ -17,6 +17,7 @@ import { useStore } from "../state/store";
 import { EnrichmentStatus } from "./EnrichmentStatus";
 import { GetDataGuide } from "./GetDataGuide";
 import { GooglePull } from "./GooglePull";
+import { SharedPlaces } from "./SharedPlaces";
 
 const listName = (file: File) =>
   file.name.replace(/\.(csv|json|geojson)$/i, "");
@@ -40,7 +41,7 @@ async function isTimelineFile(file: File): Promise<boolean> {
 
 async function placesFromShare(
   items: SharedItems,
-): Promise<{ timelines: File[]; places: Place[] }> {
+): Promise<{ timelines: File[]; places: Place[]; linked: string[] }> {
   const timelineFlags = await Promise.all(items.files.map(isTimelineFile));
   const timelines = items.files.filter((_, i) => timelineFlags[i]);
   const lists = items.files.filter((_, i) => !timelineFlags[i]);
@@ -49,7 +50,11 @@ async function placesFromShare(
     const shared = placeFromSharedLink(link);
     return shared ? [shared] : [];
   });
-  return { timelines, places: [...listPlaces, ...linkPlaces] };
+  return {
+    timelines,
+    places: [...listPlaces, ...linkPlaces],
+    linked: linkPlaces.map((p) => p.id),
+  };
 }
 
 function download(name: string, content: string) {
@@ -171,6 +176,7 @@ function useImportActions() {
   const { status, busy, progress, run } = useTask();
   const enrichment = useEnrichment();
   const [archiveLinks, setArchiveLinks] = useState<string[]>([]);
+  const [sharedIds, setSharedIds] = useState<string[]>([]);
   const stale = dataset.places.filter((p) => needsEnrichment(p, new Date()));
   const unlocated = dataset.places.filter((p) => !p.located && p.name);
 
@@ -188,7 +194,8 @@ function useImportActions() {
 
   const importShared = (items: SharedItems) =>
     run("Importing what you shared…", async () => {
-      const { timelines, places } = await placesFromShare(items);
+      const { timelines, places, linked } = await placesFromShare(items);
+      setSharedIds(linked);
       const parts = [];
       for (const file of timelines) {
         const result = await parseTimelineFile(file);
@@ -249,6 +256,7 @@ function useImportActions() {
     pullFromGoogle,
     signInFailed,
     archiveLinks,
+    sharedIds,
     enrich,
     locate,
     restore,
@@ -280,6 +288,7 @@ export function ImportPage() {
     pullFromGoogle,
     signInFailed,
     archiveLinks,
+    sharedIds,
     enrich,
     locate,
     restore,
@@ -292,6 +301,7 @@ export function ImportPage() {
         Everything stays in this browser. Only coordinates and place names go to
         OpenStreetMap for matching.
       </p>
+      <SharedPlaces ids={sharedIds} />
       <GetDataGuide />
       <Step
         title="1. Places you've been"

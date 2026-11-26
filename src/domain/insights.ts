@@ -13,6 +13,10 @@ export function displayName(place: Place): string {
   );
 }
 
+export function findPlace(places: Place[], id: string): Place | undefined {
+  return places.find((p) => p.id === id || p.aliases?.includes(id));
+}
+
 export function scheduleOf(place: Place): WeekSchedule | undefined {
   return parseOpeningHours(place.osm?.tags.opening_hours);
 }
@@ -57,7 +61,7 @@ export function slotOf(day: number, minute: number): Slot | undefined {
 export interface VisitPattern {
   total: number;
   weekendShare: number;
-  medianMinutes: number;
+  medianMinutes?: number;
   lastVisit?: string;
   heatmap: number[][];
   slots: Partial<Record<Slot, number>>;
@@ -72,8 +76,10 @@ export function visitPattern(place: Place): VisitPattern {
     if (slot) slots[slot] = (slots[slot] ?? 0) + 1;
   }
   const durations = place.visits
+    .filter((v) => v.source !== "checkin")
     .map((v) => v.durationMin)
     .sort((a, b) => a - b);
+  const median = durations[Math.floor(durations.length / 2)];
   const weekend = place.visits.filter(
     (v) => v.localDay === 0 || v.localDay === 6,
   ).length;
@@ -81,9 +87,7 @@ export function visitPattern(place: Place): VisitPattern {
   return {
     total: place.visits.length,
     weekendShare: place.visits.length ? weekend / place.visits.length : 0,
-    medianMinutes: durations.length
-      ? (durations[Math.floor(durations.length / 2)] as number)
-      : 0,
+    ...(median !== undefined && { medianMinutes: median }),
     ...(last && { lastVisit: last }),
     heatmap,
     slots,

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { place, takeoutZip } from "../../test/fixtures";
 import { renderWithStore } from "../../test/render";
 import { geocodeUnlocated } from "../../services/geocode";
@@ -168,6 +168,21 @@ describe("ImportPage", () => {
     expect(
       screen.getByRole("button", { name: "Locate 2 saved places by name" }),
     ).toBeInTheDocument();
+    const shared = screen.getByRole("region", { name: "Shared places" });
+    expect(
+      within(shared).getByRole("link", { name: "Blue Door" }),
+    ).toHaveAttribute(
+      "href",
+      `/place/${encodeURIComponent("b:share:https://maps.app.goo.gl/x")}`,
+    );
+    fireEvent.click(
+      within(shared).getByRole("button", { name: "Log a visit here" }),
+    );
+    expect(
+      within(shared).getByText(/Checked in at Blue Door/),
+    ).toBeInTheDocument();
+    fireEvent.click(within(shared).getByRole("button", { name: "Skip" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("says so when a share holds nothing usable", async () => {

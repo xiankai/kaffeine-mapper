@@ -2,8 +2,11 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { DEFAULT_FILTERS, Filters, rankPlaces } from "../domain/filters";
 import { useArea } from "../hooks/useArea";
+import { useCheckIn } from "../hooks/useCheckIn";
 import { useStore } from "../state/store";
 import { AreaPicker } from "./AreaPicker";
+import { CheckInPanel, FreshnessLine } from "./CheckInPanel";
+import { CheckInOutcome } from "./EvaluationSheet";
 import { FilterBar } from "./FilterBar";
 import { PlaceCard } from "./PlaceCard";
 
@@ -16,6 +19,7 @@ export function ExplorePage() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [shown, setShown] = useState(PAGE_SIZE);
   const area = useArea(dataset.places);
+  const checkIn = useCheckIn();
   const ranked = useMemo(
     () =>
       rankPlaces(
@@ -37,6 +41,11 @@ export function ExplorePage() {
 
   return (
     <div className="explore">
+      <div className="explore-head">
+        <FreshnessLine places={dataset.places} />
+        <CheckInPanel places={dataset.places} onCheckIn={checkIn.checkIn} />
+      </div>
+      <CheckInOutcome flow={checkIn} />
       <AreaPicker
         mode={area.mode}
         status={area.status}
