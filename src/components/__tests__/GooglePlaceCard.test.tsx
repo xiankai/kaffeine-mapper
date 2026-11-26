@@ -42,8 +42,26 @@ describe("with a Google Maps key", () => {
       container.querySelector("gmp-place-details-place-request"),
     ).toBeInTheDocument();
     expect(
+      container.querySelector("gmp-place-content-config gmp-place-attribution"),
+    ).toBeInTheDocument();
+    expect(container.querySelector("gmp-place-all-content")).toBeNull();
+    expect(
       screen.getByRole("link", { name: "Open in Google Maps" }),
     ).toHaveAttribute("href", expect.stringContaining("place_id:abc"));
+  });
+
+  it("hides Google's card when it reports an error and keeps the link", () => {
+    const { container } = show(
+      [place({ id: "g:abc", googlePlaceId: "abc" })],
+      "g:abc",
+    );
+    const card = container.querySelector("gmp-place-details-compact");
+    expect(card).not.toHaveAttribute("hidden");
+    fireEvent(card as Element, new Event("gmp-error"));
+    expect(card).toHaveAttribute("hidden");
+    expect(
+      screen.getByRole("link", { name: "Open in Google Maps" }),
+    ).toBeInTheDocument();
   });
 
   it("swallows a failed library load", () => {
